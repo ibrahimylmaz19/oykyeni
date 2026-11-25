@@ -363,8 +363,7 @@
 
   function getQuestionKey(q) {
     if (!q) return '';
-    const text = String(q.q || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    return text;
+    return String(q.q || '').trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
   function getRecentQuestionKeys() {
@@ -397,7 +396,6 @@
     return txt.value;
   }
 
-  // Google Custom Search JSON API üzerinden soru çekme (anahtar varsa Google'dan, yoksa OpenTDB API'den)
   async function fetchQuestionsFromGoogleOrWeb(catVal, difVal, amount = 12) {
     const apiKey = ($('bdGoogleApiKeyInput')?.value || '').trim();
     const cx = ($('bdGoogleCxInput')?.value || '').trim();
@@ -439,7 +437,6 @@
       } catch {}
     }
 
-    // Ücretsiz harici trivia JSON kaynağından taze soru çekme
     try {
       const diffParam =
         difVal === 'Kolay' ? '&difficulty=easy' : difVal === 'Zor' ? '&difficulty=hard' : '';
@@ -2619,6 +2616,16 @@
     rematchBtn.onclick = async () => {
       if (!roomRef || !roomData) return;
       const count = Number(roomData.settings?.count || 10);
+      if (!isNumberPuzzleMode()) {
+        const freshExt = await fetchQuestionsFromGoogleOrWeb(
+          roomData?.settings?.category || 'Karışık',
+          roomData?.settings?.difficulty || 'Karışık',
+          count + 5
+        );
+        if (freshExt.length) {
+          window.__BD_FETCHED_QUESTIONS = [...freshExt, ...(window.__BD_FETCHED_QUESTIONS || [])];
+        }
+      }
       const freshDeck = isNumberPuzzleMode() ? [] : pickFreshQuestions(count);
 
       const resetPlayers = {};
