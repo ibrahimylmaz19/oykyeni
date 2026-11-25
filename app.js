@@ -736,17 +736,11 @@
   }
 
   // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & CANLI SORU KAYNAĞI ---
+// --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & ANAHTARSIZ CANLI SORU ---
   function ensureSetupExtras() {
     const setupSec = $('setup');
     const contBtn = $('continueBtn');
     if (!setupSec || !contBtn || $('bdGameModeBox')) return;
-
-    let savedKey = '';
-    let savedCx = '';
-    try {
-      savedKey = localStorage.getItem(GOOGLE_API_KEY_STORAGE) || '';
-      savedCx = localStorage.getItem(GOOGLE_CX_STORAGE) || '';
-    } catch {}
 
     const modeBox = document.createElement('div');
     modeBox.id = 'bdGameModeBox';
@@ -763,26 +757,18 @@
     `;
     contBtn.parentNode.insertBefore(modeBox, contBtn);
 
-    const googleBox = document.createElement('div');
-    googleBox.id = 'bdGoogleSourceBox';
-    googleBox.style.cssText =
+    const liveBox = document.createElement('div');
+    liveBox.id = 'bdGoogleSourceBox';
+    liveBox.style.cssText =
       'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
-    googleBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🌐 Canlı İnternetten Rastgele Türkçe Soru</b>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-        <input id="bdGoogleApiKeyInput" value="${escapeHtml(
-          savedKey
-        )}" placeholder="Google CSE API Key (opsiyonel)" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.8rem;">
-        <input id="bdGoogleCxInput" value="${escapeHtml(
-          savedCx
-        )}" placeholder="Google CSE CX ID (opsiyonel)" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.8rem;">
-      </div>
+    liveBox.innerHTML = `
+      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🌐 Canlı İnternetten Rastgele Türkçe Soru (API Key İstemez)</b>
       <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-        <span id="bdGoogleFetchStatus" style="font-size:.78rem;color:#475569;">Sorular koda gömülü değildir; her oyunda canlı kaynaktan rastgele çekilir.</span>
+        <span id="bdGoogleFetchStatus" style="font-size:.78rem;color:#475569;">Her oyunda canlı kaynaktan tekrarsız ve rastgele sorular çekilir.</span>
         <button type="button" id="bdGoogleFetchNowBtn" class="btn secondary small">Rastgele Soru Test Et</button>
       </div>
     `;
-    contBtn.parentNode.insertBefore(googleBox, contBtn);
+    contBtn.parentNode.insertBefore(liveBox, contBtn);
 
     const syncModeVisibility = () => {
       const isPuzzle = $('gameModeSelect')?.value === 'number_puzzle';
@@ -792,10 +778,6 @@
     syncModeVisibility();
 
     $('bdGoogleFetchNowBtn').onclick = async () => {
-      try {
-        localStorage.setItem(GOOGLE_API_KEY_STORAGE, ($('bdGoogleApiKeyInput').value || '').trim());
-        localStorage.setItem(GOOGLE_CX_STORAGE, ($('bdGoogleCxInput').value || '').trim());
-      } catch {}
       $('bdGoogleFetchStatus').textContent = '⏳ Canlı kaynaktan rastgele sorular çekiliyor...';
       const sample = await fetchRandomQuestionsFromWeb(
         Number($('qCount')?.value) || 5,
