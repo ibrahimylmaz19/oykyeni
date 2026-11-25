@@ -36,10 +36,6 @@
   let recordedMatchId = null;
   let darkMode = false;
 
-  // Sıralama ve çoklu seçim için geçici tur seçimleri
-  let pickedOrderIndices = [];
-  let pickedMultiIndices = new Set();
-
   // Joker maliyetleri (seçildiği an puan silinir)
   const JOKER_COSTS = {
     fifty: 15,
@@ -55,29 +51,119 @@
   let localStreak = 0;
   let activeBetAmount = 0;
 
-  // Geniş yedek soru havuzu (QUESTION_BANK yoksa veya azsa devreye girer)
+  // Geniş yedek soru havuzu (tümü klasik 4 şıklı, geniş kapasiteli)
   const FALLBACK_BANK = [
-    { c: 'Genel Kültür', d: 'Orta', type: 'single', q: 'Türkiye’nin en yüksek dağı hangisidir?', a: ['Süphan', 'Ağrı Dağı', 'Erciyes', 'Kaçkar'], k: 1, e: 'Ağrı Dağı 5.137 metre ile en yüksektir.' },
-    { c: 'Genel Kültür', d: 'Kolay', type: 'single', q: 'Hangi gezegen Güneş’e en yakındır?', a: ['Venüs', 'Mars', 'Merkür', 'Dünya'], k: 2, e: 'Güneş’e en yakın gezegen Merkür’dür.' },
-    { c: 'Genel Kültür', d: 'Orta', type: 'single', q: 'Mona Lisa tablosu hangi müzede sergilenmektedir?', a: ['Louvre Müzesi', 'Prado Müzesi', 'Uffizi Galerisi', 'British Museum'], k: 0, e: 'Mona Lisa Paris’teki Louvre Müzesi’ndedir.' },
-    { c: 'Genel Kültür', d: 'Zor', type: 'single', q: 'Periyodik tabloda "Au" simgesi hangi elementi gösterir?', a: ['Gümüş', 'Altın', 'Argon', 'Alüminyum'], k: 1, e: 'Au, Latince Aurum (Altın) kelimesinden gelir.' },
-    { c: 'Bilim', d: 'Kolay', type: 'tf', q: 'Su 0°C’de donar, 100°C’de kaynar (standart atmosfer basıncında).', a: ['Doğru', 'Yanlış'], k: 0, e: 'Normal koşullarda su 0°C’de donar, 100°C’de kaynar.' },
-    { c: 'Bilim', d: 'Orta', type: 'tf', q: 'Ses boşlukta ışıktan daha hızlı yayılır.', a: ['Doğru', 'Yanlış'], k: 1, e: 'Sesin yayılması için ortama ihtiyaç vardır; boşlukta yayılmaz.' },
-    { c: 'Bilim', d: 'Kolay', type: 'tf', q: 'İnsan vücudundaki en büyük organ deridir.', a: ['Doğru', 'Yanlış'], k: 0, e: 'Deri insan vücudunun en büyük organıdır.' },
-    { c: 'Bilim', d: 'Orta', type: 'tf', q: 'Kutup Yıldızı her zaman tam güneyi gösterir.', a: ['Doğru', 'Yanlış'], k: 1, e: 'Kutup Yıldızı kuzey yarımkürede kuzey yönünü gösterir.' },
-    { c: 'Coğrafya', d: 'Orta', type: 'order', q: 'Şehirleri batıdan doğuya doğru sırayla seç:', a: ['Edirne', 'Ankara', 'Erzurum', 'Kars'], order: [0, 1, 2, 3], e: 'Batıdan doğuya: Edirne → Ankara → Erzurum → Kars.' },
-    { c: 'Tarih', d: 'Orta', type: 'order', q: 'Olayları eskiden yeniye doğru sırayla seç:', a: ['İstanbul’un Fethi', 'Cumhuriyet’in İlanı', 'Ay’a İlk İnsan'], order: [0, 1, 2], e: '1453 → 1923 → 1969.' },
-    { c: 'Bilim', d: 'Kolay', type: 'order', q: 'Birimleri küçükten büyüğe sırayla seç:', a: ['Gram', 'Kilogram', 'Ton'], order: [0, 1, 2], e: 'Gram < Kilogram < Ton.' },
-    { c: 'Genel Kültür', d: 'Orta', type: 'multi', q: 'Hangileri gezegendir? (2 şık seç)', a: ['Mars', 'Plüton', 'Venüs', 'Güneş'], correctSet: [0, 2], e: 'Mars ve Venüs gezegendir; Güneş yıldızdır.' },
-    { c: 'Teknoloji', d: 'Zor', type: 'multi', q: 'Hangileri programlama dili değildir? (2 şık seç)', a: ['HTML', 'Python', 'CSS', 'Rust'], correctSet: [0, 2], e: 'HTML işaretleme, CSS stil dilidir.' },
-    { c: 'Coğrafya', d: 'Orta', type: 'multi', q: 'Hangileri Türkiye’nin komşusudur? (2 şık seç)', a: ['Yunanistan', 'İtalya', 'Gürcistan', 'İspanya'], correctSet: [0, 2], e: 'Yunanistan ve Gürcistan komşularımızdandır.' },
-    { c: 'Bilim', d: 'Zor', type: 'estimate', q: 'Güneş ışığı Dünya’ya ortalama kaç dakikada ulaşır?', target: 8, tolerance: 3, unit: 'dk', e: 'Ortalama 8 dakika 20 saniye sürer.' },
-    { c: 'Genel Kültür', d: 'Orta', type: 'estimate', q: 'Bir standart satranç tahtasında toplam kaç kare vardır?', target: 64, tolerance: 5, unit: 'kare', e: '8×8 düzende 64 kare bulunur.' },
-    { c: 'Tarih', d: 'Zor', type: 'estimate', q: 'Türkiye Cumhuriyeti kaç yılında ilan edilmiştir?', target: 1923, tolerance: 2, unit: '', e: '29 Ekim 1923’te ilan edilmiştir.' },
-    { c: 'Spor', d: 'Kolay', type: 'single', q: 'Standart bir futbol maçı normal sürede kaç dakikadır?', a: ['80', '90', '100', '75'], k: 1, e: '2×45 dakikadan toplam 90 dakikadır.' },
-    { c: 'Sanat', d: 'Orta', type: 'single', q: 'Üç ana renkten biri hangisidir?', a: ['Mor', 'Turuncu', 'Sarı', 'Pembe'], k: 2, e: 'Ana renkler sarı, kırmızı ve mavidir.' },
-    { c: 'Teknoloji', d: 'Kolay', type: 'single', q: 'Klavyede kopyalama yapmak için hangi kısayol kullanılır?', a: ['Ctrl + V', 'Ctrl + X', 'Ctrl + C', 'Ctrl + Z'], k: 2, e: 'Ctrl + C kopyalama kısayoludur.' }
+    { c: 'Genel Kültür', d: 'Orta', q: 'Türkiye’nin en yüksek dağı hangisidir?', a: ['Süphan Dağı', 'Ağrı Dağı', 'Erciyes Dağı', 'Kaçkar Dağı'], k: 1, e: 'Ağrı Dağı 5.137 metre ile en yüksektir.' },
+    { c: 'Genel Kültür', d: 'Kolay', q: 'Hangi gezegen Güneş’e en yakındır?', a: ['Venüs', 'Mars', 'Merkür', 'Dünya'], k: 2, e: 'Güneş’e en yakın gezegen Merkür’dür.' },
+    { c: 'Genel Kültür', d: 'Orta', q: 'Mona Lisa tablosu hangi müzede sergilenmektedir?', a: ['Louvre Müzesi', 'Prado Müzesi', 'Uffizi Galerisi', 'British Museum'], k: 0, e: 'Mona Lisa Paris’teki Louvre Müzesi’ndedir.' },
+    { c: 'Genel Kültür', d: 'Zor', q: 'Periyodik tabloda "Au" simgesi hangi elementi gösterir?', a: ['Gümüş', 'Altın', 'Argon', 'Alüminyum'], k: 1, e: 'Au, Latince Aurum (Altın) kelimesinden gelir.' },
+    { c: 'Genel Kültür', d: 'Orta', q: 'Hangisi bir asil gazdır?', a: ['Oksijen', 'Azot', 'Helyum', 'Klor'], k: 2, e: 'Helyum periyodik tabloda soygaz/asil gaz grubundadır.' },
+    { c: 'Genel Kültür', d: 'Kolay', q: 'Bir yıl normalde kaç gündür?', a: ['360', '364', '365', '366'], k: 2, e: 'Artık yıllar dışında bir yıl 365 gündür.' },
+    { c: 'Genel Kültür', d: 'Zor', q: 'Nobel Ödülleri hangi ülkede verilmektedir (Barış Ödülü hariç)?', a: ['İsviçre', 'İsveç', 'Norveç', 'Danimarka'], k: 1, e: 'Nobel Ödülleri Stockholm (İsveç)’te verilir; Barış Ödülü Oslo’dadır.' },
+    { c: 'Bilim', d: 'Kolay', q: 'Su normal atmosfer basıncında kaç derecede kaynar?', a: ['80°C', '90°C', '100°C', '110°C'], k: 2, e: 'Standart basınçta saf su 100°C’de kaynar.' },
+    { c: 'Bilim', d: 'Orta', q: 'İnsan vücudundaki en büyük organ hangisidir?', a: ['Karaciğer', 'Deri', 'Akciğer', 'Kalın Bağırsak'], k: 1, e: 'Deri insan vücudunun en büyük organıdır.' },
+    { c: 'Bilim', d: 'Zor', q: 'Işık boşlukta saniyede yaklaşık kaç kilometre yol alır?', a: ['150.000 km', '225.000 km', '300.000 km', '450.000 km'], k: 2, e: 'Işık hızı boşlukta yaklaşık 300.000 km/s’dir.' },
+    { c: 'Bilim', d: 'Orta', q: 'DNA’nın açılımında hangi baz yer almaz?', a: ['Adenin', 'Timin', 'Urasil', 'Guanin'], k: 2, e: 'Urasil RNA’da bulunur, DNA’da yerine Timin vardır.' },
+    { c: 'Coğrafya', d: 'Kolay', q: 'Akdeniz’e kıyısı olan Türk şehirlerinden biri hangisidir?', a: ['Konya', 'Mersin', 'Kayseri', 'Sivas'], k: 1, e: 'Mersin Akdeniz kıyısındadır.' },
+    { c: 'Coğrafya', d: 'Orta', q: 'Dünyanın en uzun nehri hangisidir?', a: ['Amazon', 'Nil', 'Yangtze', 'Missisipi'], k: 1, e: 'Uzunluk tartışmalarında Nil nehri genellikle en uzun kabul edilir.' },
+    { c: 'Coğrafya', d: 'Zor', q: 'Hangi boğaz Karadeniz ile Marmara Denizi’ni birbirine bağlar?', a: ['Çanakkale Boğazı', 'İstanbul Boğazı', 'Hürmüz Boğazı', 'Cebelitarık Boğazı'], k: 1, e: 'İstanbul Boğazı Karadeniz ile Marmara’yı bağlar.' },
+    { c: 'Tarih', d: 'Kolay', q: 'Türkiye Cumhuriyeti hangi yılda ilan edilmiştir?', a: ['1919', '1920', '1923', '1938'], k: 2, e: 'Cumhuriyet 29 Ekim 1923’te ilan edilmiştir.' },
+    { c: 'Tarih', d: 'Orta', q: 'İstanbul hangi tarihte fethedilmiştir?', a: ['1299', '1453', '1517', '1683'], k: 1, e: 'İstanbul 1453 yılında fethedilmiştir.' },
+    { c: 'Tarih', d: 'Zor', q: 'Yazıyı ilk kullanan uygarlık hangisidir?', a: ['Mısırlılar', 'Sümerler', 'Fenikeliler', 'Hititler'], k: 1, e: 'Çivi yazısını geliştiren Sümerlerdir.' },
+    { c: 'Spor', d: 'Kolay', q: 'Normal sürede bir futbol maçı kaç dakikadır?', a: ['60 dakika', '80 dakika', '90 dakika', '120 dakika'], k: 2, e: 'İki 45 dakikalık devreden oluşur.' },
+    { c: 'Spor', d: 'Orta', q: 'Basketbolda normal saha içi uzaktan atış kaç puandır?', a: ['1 puan', '2 puan', '3 puan', '4 puan'], k: 2, e: 'Üç sayı çizgisinin gerisinden yapılan isabetli atış 3 puandır.' },
+    { c: 'Teknoloji', d: 'Kolay', q: 'Klavyede kopyalama yapmak için hangi kısayol kullanılır?', a: ['Ctrl + V', 'Ctrl + X', 'Ctrl + C', 'Ctrl + Z'], k: 2, e: 'Ctrl + C kopyalama kısayoludur.' },
+    { c: 'Teknoloji', d: 'Orta', q: 'HTML açılımında "L" harfi neyi ifade eder?', a: ['Logic', 'Language', 'Link', 'List'], k: 1, e: 'HTML: HyperText Markup Language.' }
   ];
+
+  // --- SAYI TUTMA & ELEME SORULARI KATEGORİSİ ---
+  function generateNumberEliminationQuestion() {
+    const min = 1;
+    const max = 100;
+    const secret = Math.floor(Math.random() * (max - min + 1)) + min;
+    const clueType = Math.floor(Math.random() * 4);
+
+    if (clueType === 0) {
+      const pivot = Math.floor(Math.random() * 60) + 20;
+      const isGreater = secret > pivot;
+      const opts = [
+        `${pivot}’den büyük bir sayı`,
+        `${pivot}’den küçük veya eşit bir sayı`,
+        `Tam olarak ${pivot}’ye eşit`,
+        `10’un katı bir sayı`
+      ];
+      return {
+        c: 'Sayı Tutma (Eleme)',
+        d: 'Orta',
+        q: `Rakibin ${min}-${max} arasında bir sayı tuttu! Eleme ipucu: Tutulan sayı ${pivot}’den ${
+          isGreater ? 'BÜYÜKTÜR' : 'KÜÇÜK VEYA EŞİTTİR'
+        }. Hangisi elenmez?`,
+        a: opts,
+        k: isGreater ? 0 : 1,
+        e: `Tutulan sayı ${secret} idi (${pivot} ile karşılaştırma elemesi).`
+      };
+    }
+
+    if (clueType === 1) {
+      const isEven = secret % 2 === 0;
+      const opts = [
+        'Çift sayı (2’ye tam bölünür)',
+        'Tek sayı (2’ye bölününce 1 kalır)',
+        '50’den kesin büyük çift sayı',
+        '10’a tam bölünen sayı'
+      ];
+      return {
+        c: 'Sayı Tutma (Eleme)',
+        d: 'Kolay',
+        q: `Rakibin ${min}-${max} arasında bir sayı tuttu! Eleme sorusu: Sayı ${
+          isEven ? 'ÇİFT' : 'TEK'
+        } sayıdır. Doğru eleme seçeneği hangisidir?`,
+        a: opts,
+        k: isEven ? 0 : 1,
+        e: `Tutulan sayı ${secret} idi (${isEven ? 'Çift' : 'Tek'}).`
+      };
+    }
+
+    if (clueType === 2) {
+      const divBy3 = secret % 3 === 0;
+      const opts = [
+        '3’e tam bölünür',
+        '3’e tam bölünmez',
+        'Yalnızca 9’a bölünür',
+        'Asal sayıdır'
+      ];
+      return {
+        c: 'Sayı Tutma (Eleme)',
+        d: 'Orta',
+        q: `Rakibin ${min}-${max} arasında bir sayı tuttu! Eleme sorusu: Sayı 3’e ${
+          divBy3 ? 'TAM BÖLÜNÜR' : 'TAM BÖLÜNMEZ'
+        }. Hangisi doğru eleme bilgisidir?`,
+        a: opts,
+        k: divBy3 ? 0 : 1,
+        e: `Tutulan sayı ${secret} idi (${secret} ÷ 3 = ${(secret / 3).toFixed(2)}).`
+      };
+    }
+
+    const low = Math.floor(Math.random() * 50) + 1;
+    const high = Math.min(100, low + 25);
+    const inRange = secret >= low && secret <= high;
+    const opts = [
+      `${low} ile ${high} aralığında`,
+      `${low} ile ${high} aralığının dışında`,
+      `1 ile 10 arasında`,
+      `90 ile 100 arasında`
+    ];
+    return {
+      c: 'Sayı Tutma (Eleme)',
+      d: 'Zor',
+      q: `Rakibin ${min}-${max} arasında bir sayı tuttu! Eleme sorusu: Sayı ${low}-${high} aralığında ${
+        inRange ? 'YER ALIYOR' : 'YER ALMIYOR'
+      }. Hangisi elenmez?`,
+      a: opts,
+      k: inRange ? 0 : 1,
+      e: `Tutulan sayı ${secret} idi (Aralık: ${low}-${high}).`
+    };
+  }
 
   // --- KARANLIK / GECE MODU & ANİMASYONLAR ---
   const THEME_STORAGE_KEY = 'bd_dark_mode_v1';
@@ -363,8 +449,8 @@
     }
   }
 
-  // --- GENİŞ DİNAMİK SORU ÜRETİCİLERİ & YENİ OYUN KARIŞTIRICISI ---
-  const RECENT_Q_STORAGE_KEY = 'bd_recent_game_questions_v1';
+  // --- YENİ OYUN KARIŞTIRICI & TEKRAR ÖNLEYİCİ (KLASİK ŞIKLI MANTIK) ---
+  const RECENT_Q_STORAGE_KEY = 'bd_recent_game_questions_v2';
 
   function fisherYatesShuffle(arr) {
     const copy = [...arr];
@@ -375,119 +461,11 @@
     return copy;
   }
 
-  function generateProceduralQuestion() {
-    const kind = Math.floor(Math.random() * 5);
-
-    if (kind === 0) {
-      // Hızlı çarpma sorusu
-      const a = Math.floor(Math.random() * 18) + 6;
-      const b = Math.floor(Math.random() * 10) + 3;
-      const correct = a * b;
-      const set = new Set([correct]);
-      while (set.size < 4) {
-        const step = Math.random() < 0.5 ? 2 : 10;
-        const delta = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? -1 : 1) * step;
-        set.add(Math.max(2, correct + delta));
-      }
-      const opts = fisherYatesShuffle([...set]).map(String);
-      return {
-        c: 'Hızlı Matematik',
-        d: 'Orta',
-        type: 'single',
-        q: `${a} × ${b} işleminin sonucu kaçtır?`,
-        a: opts,
-        k: opts.indexOf(String(correct)),
-        e: `${a} × ${b} = ${correct}`,
-        twist: 'normal'
-      };
-    }
-
-    if (kind === 1) {
-      // Sayısal sıralama sorusu
-      const base = Math.floor(Math.random() * 50) + 10;
-      const vals = fisherYatesShuffle([
-        base,
-        base + Math.floor(Math.random() * 14) + 4,
-        base + Math.floor(Math.random() * 25) + 20
-      ]);
-      const sorted = [...vals].sort((x, y) => x - y);
-      const orderIndices = sorted.map((v) => vals.indexOf(v));
-      return {
-        c: 'Sıralama Mantığı',
-        d: 'Orta',
-        type: 'order',
-        q: 'Sayıları küçükten büyüğe sırayla seç:',
-        a: vals.map(String),
-        order: orderIndices,
-        e: `Sıralama: ${sorted.join(' < ')}`,
-        twist: 'normal'
-      };
-    }
-
-    if (kind === 2) {
-      // Tahmin / Yakınlık sorusu
-      const target = Math.floor(Math.random() * 75) + 15;
-      return {
-        c: 'Tahmin Arenası',
-        d: 'Zor',
-        type: 'estimate',
-        q: `1 ile 90 arasında tutulan gizli sayı kaçtır? (±5 yakınlık puan getirir)`,
-        target,
-        tolerance: 5,
-        unit: '',
-        e: `Gizli sayı: ${target}`,
-        twist: 'normal'
-      };
-    }
-
-    if (kind === 3) {
-      // Kelime harf sayısı mantığı
-      const words = [
-        { w: 'ALGORİTMA', hint: 'Bilgisayar biliminde adım adım çözüm yolu' },
-        { w: 'DÜELLO', hint: 'İkili kapışma' },
-        { w: 'GALAKSİ', hint: 'Yıldız sistemi' },
-        { w: 'ELEKTRİK', hint: 'Enerji türü' },
-        { w: 'KÜTÜPHANE', hint: 'Kitapların toplandığı yer' }
-      ];
-      const pick = words[Math.floor(Math.random() * words.length)];
-      const len = pick.w.length;
-      const set = new Set([len, Math.max(3, len - 2), len + 2, len + 4]);
-      const opts = fisherYatesShuffle([...set]).map((n) => `${n} harf`);
-      return {
-        c: 'Kelime Mantığı',
-        d: 'Kolay',
-        type: 'single',
-        q: `"${pick.w}" kelimesi (${pick.hint}) kaç harflidir?`,
-        a: opts,
-        k: opts.indexOf(`${len} harf`),
-        e: `"${pick.w}" kelimesi ${len} harflidir.`,
-        twist: 'normal'
-      };
-    }
-
-    // Doğru / Yanlış çıkarma mantığı
-    const x = Math.floor(Math.random() * 60) + 40;
-    const y = Math.floor(Math.random() * 35) + 10;
-    const realDiff = x - y;
-    const isTrueClaim = Math.random() < 0.5;
-    const claimedDiff = isTrueClaim ? realDiff : realDiff + (Math.random() < 0.5 ? 6 : -6);
-    return {
-      c: 'Hızlı Mantık',
-      d: 'Kolay',
-      type: 'tf',
-      q: `${x} - ${y} işleminin sonucu ${claimedDiff} eder.`,
-      a: ['Doğru', 'Yanlış'],
-      k: isTrueClaim ? 0 : 1,
-      e: `${x} - ${y} = ${realDiff}`,
-      twist: 'normal'
-    };
-  }
-
   function getQuestionKey(q) {
     if (!q) return '';
     const text = String(q.q || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    const ansPart = Array.isArray(q.a) ? q.a.map((x) => String(x || '').trim().toLowerCase()).join('|') : String(q.target || '');
-    return `${q.type || 'single'}__${text}__${ansPart}`;
+    const ansPart = Array.isArray(q.a) ? q.a.map((x) => String(x || '').trim().toLowerCase()).join('|') : '';
+    return `${text}__${ansPart}`;
   }
 
   function getRecentQuestionKeys() {
@@ -503,7 +481,7 @@
   function saveRecentQuestionKeys(questions) {
     try {
       const added = (questions || []).map(getQuestionKey).filter(Boolean);
-      const merged = [...added, ...getRecentQuestionKeys()].slice(0, 40);
+      const merged = [...added, ...getRecentQuestionKeys()].slice(0, 45);
       localStorage.setItem(RECENT_Q_STORAGE_KEY, JSON.stringify(merged));
     } catch {}
   }
@@ -514,22 +492,40 @@
     } catch {}
   }
 
+  function ensureNumberCategoryOption() {
+    const catSel = $('category');
+    if (!catSel) return;
+    const exists = [...catSel.options].some((o) => o.value === 'Sayı Tutma (Eleme)');
+    if (!exists) {
+      const opt = document.createElement('option');
+      opt.value = 'Sayı Tutma (Eleme)';
+      opt.textContent = '🔢 Sayı Tutma (Eleme)';
+      catSel.appendChild(opt);
+    }
+  }
+
   function getCombinedBank() {
     const customBank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
-    const merged = [...customBank, ...FALLBACK_BANK];
+    const generatedNumberQuestions = Array.from({ length: 12 }, () => generateNumberEliminationQuestion());
+    const merged = [...customBank, ...FALLBACK_BANK, ...generatedNumberQuestions];
     const map = new Map();
     merged.forEach((q) => {
       const k = getQuestionKey(q);
-      if (k && !map.has(k)) map.set(k, { type: 'single', ...q });
+      if (k && !map.has(k)) map.set(k, q);
     });
     return [...map.values()];
   }
 
   function filterQuestions() {
+    ensureNumberCategoryOption();
     const cat = $('category')?.value || 'Karışık';
     const dif = $('difficulty')?.value || 'Karışık';
-    const bank = getCombinedBank();
 
+    if (cat === 'Sayı Tutma (Eleme)') {
+      return Array.from({ length: 16 }, () => generateNumberEliminationQuestion());
+    }
+
+    const bank = getCombinedBank();
     let pool = bank.filter(
       (q) => (cat === 'Karışık' || q.c === cat) && (dif === 'Karışık' || q.d === dif)
     );
@@ -548,9 +544,6 @@
     const modeVal = $('gameModeSelect')?.value || 'standard';
     return fisherYatesShuffle(list || []).map((q, idx) => {
       const copy = { ...q };
-      if (idx > 0 && idx % 2 === 0 && Math.random() < 0.65) {
-        return generateProceduralQuestion();
-      }
       const modRoll = (idx + 1) % 3;
       if (modeVal === 'chaos' || modRoll === 0) {
         const types = ['reverse', 'blind', 'bomb'];
@@ -563,6 +556,12 @@
   }
 
   function pickFreshQuestions(count) {
+    const cat = $('category')?.value || 'Karışık';
+    if (cat === 'Sayı Tutma (Eleme)') {
+      const numDeck = Array.from({ length: count }, () => generateNumberEliminationQuestion());
+      return enrichQuestionsWithTwists(numDeck).slice(0, count);
+    }
+
     const pool = filterQuestions();
     const recentSet = new Set(getRecentQuestionKeys());
 
@@ -570,7 +569,7 @@
     pool.forEach((q) => {
       const k = getQuestionKey(q);
       if (k && !uniqueMap.has(k)) {
-        uniqueMap.set(k, { type: 'single', ...q });
+        uniqueMap.set(k, q);
       }
     });
 
@@ -583,14 +582,8 @@
       selected = [...selected, ...olderOnes.slice(0, count - selected.length)];
     }
 
-    // Soru kapasitesini her yeni oyunda taze üretilen sorularla genişlet
-    const extraProceduralCount = Math.min(3, Math.max(1, Math.floor(count / 3)));
-    for (let i = 0; i < extraProceduralCount; i++) {
-      selected.push(generateProceduralQuestion());
-    }
-
     while (selected.length < count) {
-      selected.push(generateProceduralQuestion());
+      selected.push(generateNumberEliminationQuestion());
     }
 
     const finalDeck = enrichQuestionsWithTwists(selected).slice(0, count);
@@ -743,6 +736,7 @@
 
   // --- SETUP EKRANINDA OYUN MODU, ÖZEL SORU & JSON İÇE AKTARMA ---
   function ensureSetupExtras() {
+    ensureNumberCategoryOption();
     const setupSec = $('setup');
     const contBtn = $('continueBtn');
     if (!setupSec || !contBtn || $('bdCustomQuestionBox')) return;
@@ -815,7 +809,6 @@
       window.__BD_EXTRA_QUESTIONS.push({
         c: 'Özel Soru',
         d: 'Zor',
-        type: 'single',
         q: qTxt,
         a: opts,
         k,
@@ -841,7 +834,6 @@
             window.__BD_EXTRA_QUESTIONS.push({
               c: item.c || 'Özel JSON',
               d: item.d || 'Zor',
-              type: item.type || 'single',
               q: String(item.q),
               a: item.a.slice(0, 4).map(String),
               k: Number(item.k || 0),
@@ -931,8 +923,6 @@
       activeBetAmount = 0;
       used5050OnTurn = -1;
       hiddenOptionIndices.clear();
-      pickedOrderIndices = [];
-      pickedMultiIndices.clear();
       shownPenaltyIds.clear();
       seenReactionIds.clear();
       lastSeenChatCount = 0;
@@ -1417,12 +1407,11 @@
     const jokers = me.jokers || { fifty: 1, plusTime: 1, doublePts: 1 };
     const disabledAll = !isMyTurn || answered || isSpectator();
     const myScore = Number(me.score || 0);
-    const isChoiceQuestion = Array.isArray(questionObj?.a) && questionObj.a.length >= 4 && questionObj.type !== 'tf';
 
     bar.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
         <button type="button" id="joker5050Btn" class="btn secondary small" ${
-          disabledAll || !isChoiceQuestion || (jokers.fifty || 0) <= 0 || used5050OnTurn === turn || myScore < JOKER_COSTS.fifty ? 'disabled' : ''
+          disabledAll || (jokers.fifty || 0) <= 0 || used5050OnTurn === turn || myScore < JOKER_COSTS.fifty ? 'disabled' : ''
         }>✂️ 50/50 (-${JOKER_COSTS.fifty}p)</button>
         <button type="button" id="jokerTimeBtn" class="btn secondary small" ${
           disabledAll || (jokers.plusTime || 0) <= 0 || myScore < JOKER_COSTS.plusTime ? 'disabled' : ''
@@ -1511,8 +1500,7 @@
     const sabBtn = $('bdSabotageBtn');
     if (sabBtn) {
       sabBtn.onclick = async () => {
-        const len = Array.isArray(questionObj?.a) ? questionObj.a.length : 4;
-        const wrongChoices = [...Array(len).keys()].filter((idx) => idx !== questionObj?.k);
+        const wrongChoices = [0, 1, 2, 3].filter((idx) => idx !== questionObj?.k);
         const trapIdx = wrongChoices[Math.floor(Math.random() * wrongChoices.length)] ?? 0;
         await roomRef.transaction((data) => {
           if (!data?.players?.[uid]) return;
@@ -1566,8 +1554,6 @@
     if (used5050OnTurn !== turn) {
       hiddenOptionIndices.clear();
       activeBetAmount = 0;
-      pickedOrderIndices = [];
-      pickedMultiIndices.clear();
     }
 
     const qs = Array.isArray(roomData.questions) ? roomData.questions : [];
@@ -1606,18 +1592,7 @@
       return;
     }
 
-    const qType = selectedQuestion.type || 'single';
     const twist = selectedQuestion.twist || 'normal';
-    const typeTag =
-      qType === 'tf'
-        ? ' · ✅/❌ Doğru-Yanlış'
-        : qType === 'multi'
-        ? ' · ☑️ Çoklu Seçim'
-        : qType === 'order'
-        ? ' · 🔢 Sıralama'
-        : qType === 'estimate'
-        ? ' · 🎯 Tahmin'
-        : '';
     const twistLabel =
       twist === 'reverse'
         ? ' 🙃 TERS KÖŞE: YANLIŞ ŞIKKI SEÇ!'
@@ -1627,7 +1602,7 @@
         ? ' 💣 SICAK PATATES BOMBA!'
         : '';
 
-    $('qCategory').textContent = (selectedQuestion.c || 'Genel') + typeTag + twistLabel;
+    $('qCategory').textContent = (selectedQuestion.c || 'Genel') + twistLabel;
     $('qDifficulty').textContent = selectedQuestion.d || 'Orta';
     $('questionText').textContent =
       twist === 'reverse'
@@ -1643,98 +1618,34 @@
     const ans = $('answers');
     ans.innerHTML = '';
 
-    if (qType === 'estimate') {
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;';
-      wrap.innerHTML = `
-        <input id="bdEstimateInput" type="number" placeholder="Tahminini yaz..." ${
-          !isMyTurn || answered ? 'disabled' : ''
-        } style="flex:1;min-width:140px;padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:1rem;">
-        <button type="button" id="bdEstimateSubmitBtn" class="btn primary small" ${
-          !isMyTurn || answered ? 'disabled' : ''
-        }>Tahmini Gönder</button>
-      `;
-      ans.appendChild(wrap);
-      const subBtn = $('bdEstimateSubmitBtn');
-      if (subBtn) {
-        subBtn.onclick = () => {
-          const val = Number($('bdEstimateInput')?.value);
-          if (Number.isNaN(val)) {
-            toast('Geçerli bir sayı gir.');
-            return;
-          }
-          submitAnswer(val, false, turn);
-        };
+    (selectedQuestion.a || []).forEach((text, i) => {
+      const b = document.createElement('button');
+      b.className = 'answer';
+      const showTrapHint = sab && sab.trapIndex === i && !turnAnswer && isMyTurn;
+      const hintTag = showTrapHint ? ' 😈 (Şüpheli Tuzak Şık!)' : '';
+      b.textContent = ['A', 'B', 'C', 'D'][i] + '. ' + text + hintTag;
+
+      if (showTrapHint) {
+        b.style.borderStyle = 'dashed';
+        b.style.borderColor = '#ef4444';
       }
-    } else if (Array.isArray(selectedQuestion.a)) {
-      selectedQuestion.a.forEach((text, i) => {
-        const b = document.createElement('button');
-        b.className = 'answer';
-        const showTrapHint = sab && sab.trapIndex === i && !turnAnswer && isMyTurn;
-        const hintTag = showTrapHint ? ' 😈 (Şüpheli Tuzak Şık!)' : '';
-
-        if (qType === 'order') {
-          const ordPos = pickedOrderIndices.indexOf(i);
-          const badge = ordPos >= 0 ? `[#${ordPos + 1}] ` : '';
-          b.textContent = badge + text + hintTag;
-        } else if (qType === 'multi') {
-          const mark = pickedMultiIndices.has(i) ? '☑️ ' : '⬜ ';
-          b.textContent = mark + ['A', 'B', 'C', 'D'][i] + '. ' + text + hintTag;
-        } else {
-          b.textContent = (qType === 'tf' ? '' : ['A', 'B', 'C', 'D'][i] + '. ') + text + hintTag;
-        }
-
-        if (showTrapHint) {
-          b.style.borderStyle = 'dashed';
-          b.style.borderColor = '#ef4444';
-        }
-        if (hiddenOptionIndices.has(i) && !turnAnswer) {
-          b.style.visibility = 'hidden';
-          b.disabled = true;
-        } else {
-          b.disabled = !isMyTurn || answered;
-        }
-
-        b.onclick = () => {
-          if (qType === 'order') {
-            if (pickedOrderIndices.includes(i)) return;
-            pickedOrderIndices.push(i);
-            if (pickedOrderIndices.length === selectedQuestion.a.length) {
-              submitAnswer([...pickedOrderIndices], false, turn);
-            } else {
-              renderGame();
-            }
-          } else if (qType === 'multi') {
-            if (pickedMultiIndices.has(i)) pickedMultiIndices.delete(i);
-            else pickedMultiIndices.add(i);
-            renderGame();
-          } else {
-            submitAnswer(i, false, turn);
-          }
-        };
-        ans.appendChild(b);
-      });
-
-      if (qType === 'multi' && !answered) {
-        const confirmBtn = document.createElement('button');
-        confirmBtn.type = 'button';
-        confirmBtn.className = 'btn primary small';
-        confirmBtn.textContent = `Seçimleri Onayla (${pickedMultiIndices.size} seçili)`;
-        confirmBtn.disabled = !isMyTurn || pickedMultiIndices.size === 0;
-        confirmBtn.onclick = () => submitAnswer([...pickedMultiIndices], false, turn);
-        ans.appendChild(confirmBtn);
+      if (hiddenOptionIndices.has(i) && !turnAnswer) {
+        b.style.visibility = 'hidden';
+        b.disabled = true;
+      } else {
+        b.disabled = !isMyTurn || answered;
       }
-    }
+      b.onclick = () => submitAnswer(i, false, turn);
+      ans.appendChild(b);
+    });
 
     if (turnAnswer) {
       $('answerFeedback').textContent = turnAnswer.explanation || '';
-      if (qType === 'single' || qType === 'tf') {
-        if (turnAnswer.correctIndex !== undefined) {
-          [...ans.children].forEach((b, i) => {
-            if (i === turnAnswer.correctIndex) b.classList.add('correct');
-            if (i === turnAnswer.choice && i !== turnAnswer.correctIndex) b.classList.add('wrong');
-          });
-        }
+      if (turnAnswer.correctIndex !== undefined) {
+        [...ans.children].forEach((b, i) => {
+          if (i === turnAnswer.correctIndex) b.classList.add('correct');
+          if (i === turnAnswer.choice && i !== turnAnswer.correctIndex) b.classList.add('wrong');
+        });
       }
     } else {
       $('answerFeedback').textContent = '';
@@ -1770,54 +1681,6 @@
     }, 1000);
   }
 
-  function evaluateQuestionAnswer(q, choice, timeout) {
-    if (timeout) return { correct: false, ratio: 0, correctText: q.e || '' };
-    const qType = q.type || 'single';
-    const isReverse = q.twist === 'reverse';
-
-    if (qType === 'estimate') {
-      const target = Number(q.target ?? 0);
-      const tol = Number(q.tolerance ?? 3);
-      const diff = Math.abs(Number(choice) - target);
-      if (diff === 0) return { correct: true, ratio: 1, correctText: `${target}${q.unit ? ' ' + q.unit : ''}` };
-      if (diff <= tol) return { correct: true, ratio: 0.75, correctText: `${target}${q.unit ? ' ' + q.unit : ''}` };
-      return { correct: false, ratio: 0, correctText: `${target}${q.unit ? ' ' + q.unit : ''}` };
-    }
-
-    if (qType === 'order') {
-      const expected = Array.isArray(q.order) ? q.order : [0, 1, 2];
-      const arr = Array.isArray(choice) ? choice : [];
-      const exact = arr.length === expected.length && arr.every((v, idx) => v === expected[idx]);
-      const correctText = expected.map((idx) => q.a?.[idx]).filter(Boolean).join(' → ');
-      return { correct: exact, ratio: exact ? 1 : 0, correctText };
-    }
-
-    if (qType === 'multi') {
-      const expectedSet = new Set(Array.isArray(q.correctSet) ? q.correctSet : [q.k || 0]);
-      const chosenArr = Array.isArray(choice) ? choice : [];
-      let hits = 0;
-      let wrongHits = 0;
-      chosenArr.forEach((idx) => {
-        if (expectedSet.has(idx)) hits++;
-        else wrongHits++;
-      });
-      if (hits === expectedSet.size && wrongHits === 0) {
-        return { correct: true, ratio: 1, correctText: [...expectedSet].map((i) => q.a?.[i]).join(', ') };
-      }
-      if (hits > 0 && wrongHits === 0) {
-        return { correct: true, ratio: 0.5, correctText: [...expectedSet].map((i) => q.a?.[i]).join(', ') };
-      }
-      return { correct: false, ratio: 0, correctText: [...expectedSet].map((i) => q.a?.[i]).join(', ') };
-    }
-
-    const correct = isReverse ? choice >= 0 && choice !== q.k : choice === q.k;
-    return {
-      correct,
-      ratio: correct ? 1 : 0,
-      correctText: Array.isArray(q.a) ? q.a[q.k] || '' : ''
-    };
-  }
-
   async function submitAnswer(choice, timeout = false, turnAtSubmit = null) {
     if (answered || isSpectator() || !roomData || !selectedQuestion || !roomRef) return;
     const currentTurn = turnAtSubmit !== null ? Number(turnAtSubmit) : Number(roomData.turn || 0);
@@ -1828,9 +1691,9 @@
     if ($('game')) $('game').classList.remove('bd-bomb-danger');
 
     const q = selectedQuestion;
+    const isReverse = q.twist === 'reverse';
     const isBomb = q.twist === 'bomb';
-    const evalRes = evaluateQuestionAnswer(q, choice, timeout);
-    const correct = evalRes.correct;
+    const correct = !timeout && (isReverse ? choice >= 0 && choice !== q.k : choice === q.k);
 
     if (correct) {
       localStreak += 1;
@@ -1849,7 +1712,7 @@
       if (localStreak >= 2) bonus += localStreak * 5;
     }
 
-    const rawEarned = correct ? Math.round((base + bonus) * evalRes.ratio) : 0;
+    const rawEarned = correct ? base + bonus : 0;
     const doubled = correct && doublePointsArmed ? rawEarned * 2 : rawEarned;
     doublePointsArmed = false;
 
@@ -1864,8 +1727,6 @@
       choice,
       correct,
       correctIndex: q.k,
-      questionText: q.q || '',
-      correctText: evalRes.correctText,
       earned: finalDelta,
       explanation: q.e || '',
       by: uid,
@@ -2574,7 +2435,7 @@
       qs
         .map((q, idx) => {
           const a = ansMap[idx];
-          const rightOpt = Array.isArray(q.a) ? q.a[q.k] || '' : String(q.target ?? '');
+          const rightOpt = Array.isArray(q.a) ? q.a[q.k] || '' : '';
           return `
           <div style="padding:8px 10px;margin-bottom:6px;border-radius:10px;background:rgba(148,163,184,.12);">
             <div><b>S${idx + 1}:</b> ${escapeHtml(q.q || '')}</div>
@@ -2740,7 +2601,7 @@
         </form>
       </div>
       <button type="button" id="bdChatToggle" style="margin-left:auto;display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#ff7a24,#ea580c);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 10px 24px rgba(234,88,12,.38);cursor:pointer;">
-        💬 Sohbet <span id="bdChatBadge" class="hidden" style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 7px;font-size:.75rem;">0</span>
+        💬 Sohbet <span id="bdChatBadge" class="hidden" style="background:#ef4444;color:#fff;border:none;border-radius:999px;padding:1px 7px;font-size:.75rem;">0</span>
       </button>
     `;
 
@@ -2906,6 +2767,7 @@
     }
   });
 
+  ensureNumberCategoryOption();
   ensureProfileBadge();
   show('home');
 })();
