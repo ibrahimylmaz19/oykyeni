@@ -332,24 +332,11 @@
     }
   }
 
-  // --- CANLI İNTERNETTEN RASTGELE TÜRKÇE SORU BULUCU (KODA GÖMÜLÜ HAVUZ YOK) ---
-  const RECENT_Q_STORAGE_KEY = 'bd_recent_game_questions_v4';
-  const GOOGLE_API_KEY_STORAGE = 'bd_google_cse_key_v1';
-  const GOOGLE_CX_STORAGE = 'bd_google_cse_cx_v1';
+  // --- YEREL SORU BANKASINDAN RASTGELE & TEKRARSIZ SORU SEÇİCİ ---
+  const usedInCurrentSession = new Set();
 
-  const TOPIC_SEEDS = {
-    'Genel Kültür': ['Türkiye', 'Dünya', 'İcat', 'ReKOR', 'Sembol', 'Başkent', 'Ünlü Eser'],
-    'Bilim': ['Atom', 'Güneş', 'DNA', 'Element', 'Gezegen', 'Hücre', 'Enerji'],
-    'Coğrafya': ['Okyanus', 'Dağ', 'Nehir', 'Ada', 'Boğaz', 'Göl', 'Çöl'],
-    'Tarih': ['Antlaşma', 'İmparatorluk', 'Medeniyet', 'Devrim', 'Keşif', 'Savaş'],
-    'Spor': ['Olimpiyat', 'Futbol', 'Basketbol', 'Tenis', 'Atletizm', 'Satranç'],
-    'Teknoloji': ['İnternet', 'Yapay Zeka', 'İşlemci', 'Uydu', 'Veritabanı', 'Algoritma'],
-    'Edebiyat': ['Roman', 'Şiir', 'Yazar', 'Tiyatro', 'Destan', 'Hikaye'],
-    'Sanat': ['Tablo', 'Heykel', 'Müzik', 'Mimari', 'Sinema', 'Opera']
-  };
-
-  function fisherYatesShuffle(arr) {
-    const copy = [...arr];
+  function shuffleArray(arr) {
+    const copy = Array.isArray(arr) ? arr.slice() : [];
     for (let i = copy.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [copy[i], copy[j]] = [copy[j], copy[i]];
@@ -359,247 +346,74 @@
 
   function shuffleQuestionOptions(q) {
     if (!q || !Array.isArray(q.a) || q.a.length < 2) return q;
-    const correctAnswerText = q.a[Number(q.k || 0)];
-    const shuffledOpts = fisherYatesShuffle(q.a);
-    const newK = Math.max(0, shuffledOpts.indexOf(correctAnswerText));
+    const mapped = q.a.map((text, idx) => ({ text, isCorrect: idx === Number(q.k || 0) }));
+    const shuffled = shuffleArray(mapped);
     return {
       ...q,
-      a: shuffledOpts,
-      k: newK
+      a: shuffled.map((x) => x.text),
+      k: Math.max(0, shuffled.findIndex((x) => x.isCorrect))
     };
   }
 
-  function getQuestionKey(q) {
-    if (!q) return '';
-    return String(q.q || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  function getRecentQuestionKeys() {
-    try {
-      const raw = localStorage.getItem(RECENT_Q_STORAGE_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveRecentQuestionKeys(questions) {
-    try {
-      const added = (questions || []).map(getQuestionKey).filter(Boolean);
-      const merged = [...new Set([...added, ...getRecentQuestionKeys()])].slice(0, 120);
-      localStorage.setItem(RECENT_Q_STORAGE_KEY, JSON.stringify(merged));
-    } catch {}
-  }
-
-  function clearRecentQuestionHistory() {
-    try {
-      localStorage.removeItem(RECENT_Q_STORAGE_KEY);
-    } catch {}
-  }
-
-  function decodeHtmlEntities(str) {
-    const txt = document.createElement('textarea');
-    txt.innerHTML = String(str || '');
-    return txt.value;
-  }
-
-  async function fetchLiveWikipediaCandidates(seeds, countNeeded) {
-    const titles = new Set();
-    const summaries = [];
-
-    for (const seed of fisherYatesShuffle(seeds).slice(0, 4)) {
-      try {
-        const searchUrl = `https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
-          seed
-        )}&srlimit=12&sroffset=${Math.floor(Math.random() * 25)}&format=json&origin=*`;
-        const sRes = await fetch(searchUrl);
-        if (sRes.ok) {
-          const sJson = await sRes.json();
-          const hits = sJson?.query?.search || [];
-          hits.forEach((h) => {
-            if (h?.title) titles.add(h.title);
-          });
-        }
-      } catch {}
-    }
-
-    // Tamamen rastgele Türkçe Vikipedi sayfaları da ekle
-    const randBatches = Math.min(4, Math.max(2, Math.ceil(countNeeded / 3)));
-    for (let b = 0; b < randBatches; b++) {
-      try {
-        const randUrl = `https://tr.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=8&format=json&origin=*`;
-        const rRes = await fetch(randUrl);
-        if (rRes.ok) {
-          const rJson = await rRes.json();
-          (rJson?.query?.random || []).forEach((item) => {
-            if (item?.title) titles.add(item.title);
-          });
-        }
-      } catch {}
-    }
-
-    const pickedTitles = fisherYatesShuffle([...titles]).slice(0, Math.max(16, countNeeded * 3));
-    for (const title of pickedTitles) {
-      try {
-        const sumUrl = `https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-        const pRes = await fetch(sumUrl);
-        if (!pRes.ok) continue;
-        const pJson = await pRes.json();
-        const extract = String(pJson?.extract || '').trim();
-        const cleanTitle = String(pJson?.title || title).trim();
-        if (
-          pJson?.type === 'standard' &&
-          cleanTitle &&
-          extract.length >= 45 &&
-          !cleanTitle.toLowerCase().includes('liste') &&
-          !cleanTitle.toLowerCase().includes('anlam ayrımı')
-        ) {
-          const firstSentence = extract.split(/(?<=[.!?])\s+/)[0] || extract.slice(0, 120);
-          summaries.push({
-            title: cleanTitle,
-            answerText: firstSentence.slice(0, 95)
-          });
-        }
-      } catch {}
-    }
-
-    return summaries;
-  }
-
-  async function fetchGoogleCseQuestions(catVal, difVal) {
-    const apiKey = ($('bdGoogleApiKeyInput')?.value || '').trim();
-    const cx = ($('bdGoogleCxInput')?.value || '').trim();
-    if (!apiKey || !cx) return [];
-
-    try {
-      const qTopic =
-        catVal && catVal !== 'Karışık'
-          ? `${catVal} bilgi yarışması soru nedir`
-          : 'türkçe genel kültür bilgi yarışması soru nedir';
-      const startIdx = Math.floor(Math.random() * 20) + 1;
-      const url = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(
-        apiKey
-      )}&cx=${encodeURIComponent(cx)}&q=${encodeURIComponent(qTopic)}&lr=lang_tr&hl=tr&start=${startIdx}`;
-      const res = await fetch(url);
-      if (!res.ok) return [];
-      const data = await res.json();
-      const items = Array.isArray(data.items) ? data.items : [];
-      return items
-        .filter((it) => it && it.title && it.snippet)
-        .map((it, idx) => {
-          const cleanTitle = decodeHtmlEntities(it.title).replace(/\s*[-|].*$/, '').trim();
-          const cleanSnippet = decodeHtmlEntities(it.snippet).replace(/\s+/g, ' ').trim();
-          const rightText = cleanSnippet.slice(0, 80);
-          const distractors = items
-            .filter((_, j) => j !== idx)
-            .map((x) => decodeHtmlEntities(x.snippet || x.title || '').replace(/\s+/g, ' ').trim().slice(0, 80))
-            .filter(Boolean);
-          while (distractors.length < 3) {
-            distractors.push(`Farklı bir kaynak tanımı #${distractors.length + 1}`);
-          }
-          const opts = fisherYatesShuffle([rightText, ...fisherYatesShuffle(distractors).slice(0, 3)]);
-          return shuffleQuestionOptions({
-            c: catVal && catVal !== 'Karışık' ? catVal : 'Genel Kültür',
-            d: difVal && difVal !== 'Karışık' ? difVal : 'Orta',
-            q: `"${cleanTitle}" ile ilgili doğru bilgi hangisidir?`,
-            a: opts,
-            k: Math.max(0, opts.indexOf(rightText)),
-            e: cleanSnippet
-          });
-        });
-    } catch {
-      return [];
-    }
-  }
-
-  async function fetchRandomQuestionsFromWeb(count, catVal, difVal) {
+  function fetchRandomQuestionsFromBank(count = 10, catVal = 'Karışık', difVal = 'Karışık') {
     const targetCount = Math.max(1, Number(count) || 10);
-    const cseQuestions = await fetchGoogleCseQuestions(catVal, difVal);
+    const bank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
+    if (!bank.length) return [];
 
-    const allSeeds =
-      catVal && catVal !== 'Karışık' && TOPIC_SEEDS[catVal]
-        ? TOPIC_SEEDS[catVal]
-        : Object.values(TOPIC_SEEDS).flat();
+    let pool = bank.filter((item) => {
+      const okCat =
+        !catVal ||
+        catVal === 'Karışık' ||
+        catVal === 'Tümü' ||
+        catVal === 'Hepsi' ||
+        String(item.c || '').toLowerCase() === String(catVal).toLowerCase();
+      const okDif =
+        !difVal ||
+        difVal === 'Karışık' ||
+        difVal === 'Tümü' ||
+        difVal === 'Hepsi' ||
+        String(item.d || '').toLowerCase() === String(difVal).toLowerCase();
+      return okCat && okDif;
+    });
 
-    const wikiItems = await fetchLiveWikipediaCandidates(allSeeds, targetCount);
-    const recentSet = new Set(getRecentQuestionKeys());
-    const generated = [...cseQuestions];
+    if (!pool.length) pool = bank.slice();
 
-    for (let i = 0; i < wikiItems.length && generated.length < targetCount + 6; i++) {
-      const item = wikiItems[i];
-      const otherAnswers = wikiItems
-        .filter((_, idx) => idx !== i)
-        .map((x) => x.answerText)
-        .filter((t) => t && t !== item.answerText);
-
-      if (otherAnswers.length < 3) continue;
-
-      const distractors = fisherYatesShuffle(otherAnswers).slice(0, 3);
-      const options = fisherYatesShuffle([item.answerText, ...distractors]);
-      const qObj = shuffleQuestionOptions({
-        c: catVal && catVal !== 'Karışık' ? catVal : 'Canlı Kaynak',
-        d: difVal && difVal !== 'Karışık' ? difVal : ['Kolay', 'Orta', 'Zor'][i % 3],
-        q: `"${item.title}" hakkında doğru ifade hangisidir?`,
-        a: options,
-        k: Math.max(0, options.indexOf(item.answerText)),
-        e: `${item.title}: ${item.answerText}`
-      });
-
-      if (!recentSet.has(getQuestionKey(qObj))) {
-        generated.push(qObj);
-      }
-    }
-
-    // Yeterli yeni soru çıkmazsa görülen geçmişi temizleyip kalanları doldur
-    if (generated.length < targetCount && wikiItems.length >= 4) {
-      clearRecentQuestionHistory();
-      for (let i = 0; i < wikiItems.length && generated.length < targetCount; i++) {
-        const item = wikiItems[i];
-        const distractors = fisherYatesShuffle(
-          wikiItems.filter((_, idx) => idx !== i).map((x) => x.answerText)
-        ).slice(0, 3);
-        if (distractors.length < 3) continue;
-        const options = fisherYatesShuffle([item.answerText, ...distractors]);
-        generated.push(
-          shuffleQuestionOptions({
-            c: catVal && catVal !== 'Karışık' ? catVal : 'Canlı Kaynak',
-            d: difVal && difVal !== 'Karışık' ? difVal : 'Orta',
-            q: `"${item.title}" hakkında doğru ifade hangisidir?`,
-            a: options,
-            k: Math.max(0, options.indexOf(item.answerText)),
-            e: `${item.title}: ${item.answerText}`
-          })
-        );
-      }
+    let unused = pool.filter(
+      (item) => !usedInCurrentSession.has(String(item.q || '').trim().toLowerCase())
+    );
+    if (unused.length < targetCount) {
+      pool.forEach((item) => usedInCurrentSession.delete(String(item.q || '').trim().toLowerCase()));
+      unused = pool.slice();
     }
 
     const modeVal = $('gameModeSelect')?.value || roomData?.settings?.gameMode || 'standard';
-    const finalDeck = fisherYatesShuffle(generated)
-      .slice(0, targetCount)
-      .map((q, idx) => {
-        const copy = { ...q };
-        if (modeVal === 'chaos' || (idx + 1) % 3 === 0) {
-          const types = ['reverse', 'blind', 'bomb'];
-          copy.twist = types[Math.floor(Math.random() * types.length)];
-        } else {
-          copy.twist = 'normal';
-        }
-        return copy;
-      });
+    const picked = shuffleArray(unused);
 
-    saveRecentQuestionKeys(finalDeck);
-saveRecentQuestionKeys(finalDeck);
-    const uniqueByQuestion = [];
+    const uniqueDeck = [];
     const seenInBatch = new Set();
-    for (const item of finalDeck) {
-      const key = String(item?.q || '').trim().toLowerCase();
+
+    for (let i = 0; i < picked.length && uniqueDeck.length < targetCount; i++) {
+      const q = picked[i];
+      const key = String(q?.q || '').trim().toLowerCase();
       if (!key || seenInBatch.has(key)) continue;
       seenInBatch.add(key);
-      uniqueByQuestion.push(item);
+      usedInCurrentSession.add(key);
+
+      const shuffledQ = shuffleQuestionOptions(q);
+      if (modeVal === 'chaos' || (uniqueDeck.length + 1) % 3 === 0) {
+        const types = ['reverse', 'blind', 'bomb'];
+        shuffledQ.twist = types[Math.floor(Math.random() * types.length)];
+      } else {
+        shuffledQ.twist = 'normal';
+      }
+      uniqueDeck.push(shuffledQ);
     }
-    return uniqueByQuestion.slice(0, targetCount);
+
+    return uniqueDeck;
   }
+
+  function clearRecentQuestionHistory() {
+    usedInCurrentSession.clear();
   }
 
   // --- OYUNCU PROFİLİ, UNVANLAR & İSTATİSTİK ---
@@ -745,9 +559,7 @@ saveRecentQuestionKeys(finalDeck);
     });
   }
 
-  // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & CANLI SORU KAYNAĞI ---
-// --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & ANAHTARSIZ CANLI SORU ---
- // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & YEREL RASTGELE SORU ---
+  // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & YEREL RASTGELE SORU ---
   function ensureSetupExtras() {
     const setupSec = $('setup');
     const contBtn = $('continueBtn');
@@ -775,7 +587,7 @@ saveRecentQuestionKeys(finalDeck);
     bankBox.innerHTML = `
       <b style="display:block;margin-bottom:6px;font-size:.88rem;">🎲 Rastgele Soru Havuzu</b>
       <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-        <span id="bdBankFetchStatus" style="font-size:.78rem;color:#475569;">Sorular doğrudan soru bankasından tekrarsız ve rastgele seçilir.</span>
+        <span id="bdBankFetchStatus" style="font-size:.78rem;color:#475569;">Sorular soru bankasından tekrarsız ve rastgele seçilir.</span>
         <button type="button" id="bdBankTestBtn" class="btn secondary small">Rastgele Soru Test Et</button>
       </div>
     `;
@@ -844,7 +656,7 @@ saveRecentQuestionKeys(finalDeck);
     $('setupTitle').textContent = 'Odaya katıl';
     $('createSettings').classList.add('hidden');
     $('roomCodeLabel').classList.remove('hidden');
-    ['bdGameModeBox', 'bdGoogleSourceBox'].forEach((id) => {
+    ['bdGameModeBox', 'bdLocalBankBox'].forEach((id) => {
       if ($(id)) $(id).classList.add('hidden');
     });
     show('setup');
@@ -886,14 +698,14 @@ saveRecentQuestionKeys(finalDeck);
 
         questionDeck = isPuzzle
           ? []
-          : await fetchRandomQuestionsFromWeb(
+          : fetchRandomQuestionsFromBank(
               requestedCount,
               $('category')?.value || 'Karışık',
               $('difficulty')?.value || 'Karışık'
             );
 
         if (!isPuzzle && !questionDeck.length) {
-          toast('Canlı kaynaktan soru çekilemedi, bağlantını kontrol et.');
+          toast('Soru bankasında soru bulunamadı.');
           return;
         }
 
@@ -989,7 +801,10 @@ saveRecentQuestionKeys(finalDeck);
           mySlot = 3;
           toast('👀 Oda doluydu, İzleyici modunda katıldın!');
         } else {
-          saveRecentQuestionKeys(data.questions || []);
+          (data.questions || []).forEach((item) => {
+            const k = String(item?.q || '').trim().toLowerCase();
+            if (k) usedInCurrentSession.add(k);
+          });
           await roomRef.child('players/' + uid).set({
             name,
             avatar: chosenAvatar,
@@ -1208,24 +1023,24 @@ saveRecentQuestionKeys(finalDeck);
         ${soundPickerHtml}
         <button type="button" id="lobbyApplySettingsBtn" class="btn secondary small">Yeni Sorularla Güncelle</button>
       `;
-      $('lobbyApplySettingsBtn').onclick = async () => {
+      $('lobbyApplySettingsBtn').onclick = () => {
         const newCount = Number($('lobbyQCount').value || 10);
         const newTime = Number($('lobbyQTime').value || 15);
-        const fresh = await fetchRandomQuestionsFromWeb(
+        const fresh = fetchRandomQuestionsFromBank(
           newCount,
           roomData?.settings?.category || 'Karışık',
           roomData?.settings?.difficulty || 'Karışık'
         );
         if (!fresh.length) {
-          toast('Canlı kaynaktan yeni soru çekilemedi.');
+          toast('Soru bankasında soru bulunamadı.');
           return;
         }
-        await roomRef.update({
+        roomRef.update({
           'settings/count': fresh.length,
           'settings/time': newTime,
           questions: fresh.map((q) => ({ ...q }))
         });
-        toast('Canlı kaynaktan yeni sorular çekildi ve lobi güncellendi!');
+        toast('Yeni sorular seçildi ve lobi güncellendi!');
       };
     } else {
       setBox.innerHTML = `
@@ -1523,7 +1338,6 @@ saveRecentQuestionKeys(finalDeck);
             }
           ];
 
-          // Soru cevaplandığında tahmin hakkı düşmez
           await roomRef.child('numberPuzzle').update({
             pendingQuestion: null,
             history: nextHist
@@ -1756,7 +1570,7 @@ saveRecentQuestionKeys(finalDeck);
           return;
         }
         const wrongIndices = [0, 1, 2, 3].filter((idx) => idx !== questionObj.k);
-        const toHide = fisherYatesShuffle(wrongIndices).slice(0, 2);
+        const toHide = shuffleArray(wrongIndices).slice(0, 2);
         used5050OnTurn = turn;
         toHide.forEach((idx) => hiddenOptionIndices.add(idx));
         await roomRef.child(`players/${uid}/jokers/fifty`).set(Math.max(0, (jokers.fifty || 1) - 1));
@@ -2646,7 +2460,7 @@ saveRecentQuestionKeys(finalDeck);
       rematchBtn.id = 'rematchBtn';
       rematchBtn.type = 'button';
       rematchBtn.className = 'btn secondary full';
-      rematchBtn.textContent = '🔄 Rövanş Başlat (Canlı Rastgele Sorular)';
+      rematchBtn.textContent = '🔄 Rövanş Başlat (Rastgele Sorular)';
       backBtn.parentNode.insertBefore(rematchBtn, backBtn);
     }
 
@@ -2655,7 +2469,7 @@ saveRecentQuestionKeys(finalDeck);
       const count = Number(roomData.settings?.count || 10);
       const freshDeck = isNumberPuzzleMode()
         ? []
-        : await fetchRandomQuestionsFromWeb(
+        : fetchRandomQuestionsFromBank(
             count,
             roomData?.settings?.category || 'Karışık',
             roomData?.settings?.difficulty || 'Karışık'
@@ -2708,7 +2522,7 @@ saveRecentQuestionKeys(finalDeck);
       }
 
       await roomRef.update(payload);
-      toast('🔄 Rövanş lobisi canlı rastgele sorularla hazır!');
+      toast('🔄 Rövanş lobisi rastgele sorularla hazır!');
     };
   }
 
