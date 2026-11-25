@@ -589,7 +589,17 @@
       });
 
     saveRecentQuestionKeys(finalDeck);
-    return finalDeck;
+saveRecentQuestionKeys(finalDeck);
+    const uniqueByQuestion = [];
+    const seenInBatch = new Set();
+    for (const item of finalDeck) {
+      const key = String(item?.q || '').trim().toLowerCase();
+      if (!key || seenInBatch.has(key)) continue;
+      seenInBatch.add(key);
+      uniqueByQuestion.push(item);
+    }
+    return uniqueByQuestion.slice(0, targetCount);
+  }
   }
 
   // --- OYUNCU PROFİLİ, UNVANLAR & İSTATİSTİK ---
