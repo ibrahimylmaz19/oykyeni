@@ -36,7 +36,6 @@
   let recordedMatchId = null;
   let darkMode = false;
 
-  // Joker maliyetleri
   const JOKER_COSTS = {
     fifty: 15,
     plusTime: 15,
@@ -44,36 +43,24 @@
     sabotage: 25
   };
 
-  // Aktif tur durumları
   let used5050OnTurn = -1;
   let hiddenOptionIndices = new Set();
   let doublePointsArmed = false;
   let localStreak = 0;
   let activeBetAmount = 0;
 
-  // Geniş gömülü yedek soru havuzu (şıkları kod içinde şişirmeden geniş kapasiteli)
+  // Gömülü yedek soru havuzu (sadece dış kaynak erişilemezse devreye girer)
   const FALLBACK_BANK = [
     { c: 'Genel Kültür', d: 'Orta', q: 'Türkiye’nin en yüksek dağı hangisidir?', a: ['Süphan Dağı', 'Ağrı Dağı', 'Erciyes Dağı', 'Kaçkar Dağı'], k: 1, e: 'Ağrı Dağı 5.137 metre ile en yüksektir.' },
     { c: 'Genel Kültür', d: 'Kolay', q: 'Hangi gezegen Güneş’e en yakındır?', a: ['Venüs', 'Mars', 'Merkür', 'Dünya'], k: 2, e: 'Güneş’e en yakın gezegen Merkür’dür.' },
     { c: 'Genel Kültür', d: 'Orta', q: 'Mona Lisa tablosu hangi müzede sergilenmektedir?', a: ['Louvre Müzesi', 'Prado Müzesi', 'Uffizi Galerisi', 'British Museum'], k: 0, e: 'Mona Lisa Paris’teki Louvre Müzesi’ndedir.' },
     { c: 'Genel Kültür', d: 'Zor', q: 'Periyodik tabloda "Au" simgesi hangi elementi gösterir?', a: ['Gümüş', 'Altın', 'Argon', 'Alüminyum'], k: 1, e: 'Au, Latince Aurum (Altın) kelimesinden gelir.' },
-    { c: 'Genel Kültür', d: 'Orta', q: 'Hangisi bir asil gazdır?', a: ['Oksijen', 'Azot', 'Helyum', 'Klor'], k: 2, e: 'Helyum periyodik tabloda soygaz grubundadır.' },
-    { c: 'Genel Kültür', d: 'Kolay', q: 'Bir yıl normalde kaç gündür?', a: ['360', '364', '365', '366'], k: 2, e: 'Artık yıllar dışında bir yıl 365 gündür.' },
-    { c: 'Genel Kültür', d: 'Zor', q: 'Nobel Ödülleri hangi ülkede verilmektedir (Barış Ödülü hariç)?', a: ['İsviçre', 'İsveç', 'Norveç', 'Danimarka'], k: 1, e: 'Nobel Ödülleri Stockholm (İsveç)’te verilir.' },
     { c: 'Bilim', d: 'Kolay', q: 'Su normal atmosfer basıncında kaç derecede kaynar?', a: ['80°C', '90°C', '100°C', '110°C'], k: 2, e: 'Standart basınçta saf su 100°C’de kaynar.' },
     { c: 'Bilim', d: 'Orta', q: 'İnsan vücudundaki en büyük organ hangisidir?', a: ['Karaciğer', 'Deri', 'Akciğer', 'Kalın Bağırsak'], k: 1, e: 'Deri insan vücudunun en büyük organıdır.' },
-    { c: 'Bilim', d: 'Zor', q: 'Işık boşlukta saniyede yaklaşık kaç kilometre yol alır?', a: ['150.000 km', '225.000 km', '300.000 km', '450.000 km'], k: 2, e: 'Işık hızı boşlukta yaklaşık 300.000 km/s’dir.' },
-    { c: 'Bilim', d: 'Orta', q: 'DNA’nın açılımında hangi baz yer almaz?', a: ['Adenin', 'Timin', 'Urasil', 'Guanin'], k: 2, e: 'Urasil RNA’da bulunur, DNA’da yerine Timin vardır.' },
     { c: 'Coğrafya', d: 'Kolay', q: 'Akdeniz’e kıyısı olan Türk şehirlerinden biri hangisidir?', a: ['Konya', 'Mersin', 'Kayseri', 'Sivas'], k: 1, e: 'Mersin Akdeniz kıyısındadır.' },
-    { c: 'Coğrafya', d: 'Orta', q: 'Dünyanın en uzun nehri hangisidir?', a: ['Amazon', 'Nil', 'Yangtze', 'Missisipi'], k: 1, e: 'Nil nehri genellikle en uzun kabul edilir.' },
-    { c: 'Coğrafya', d: 'Zor', q: 'Hangi boğaz Karadeniz ile Marmara Denizi’ni birbirine bağlar?', a: ['Çanakkale Boğazı', 'İstanbul Boğazı', 'Hürmüz Boğazı', 'Cebelitarık Boğazı'], k: 1, e: 'İstanbul Boğazı Karadeniz ile Marmara’yı bağlar.' },
     { c: 'Tarih', d: 'Kolay', q: 'Türkiye Cumhuriyeti hangi yılda ilan edilmiştir?', a: ['1919', '1920', '1923', '1938'], k: 2, e: 'Cumhuriyet 29 Ekim 1923’te ilan edilmiştir.' },
-    { c: 'Tarih', d: 'Orta', q: 'İstanbul hangi tarihte fethedilmiştir?', a: ['1299', '1453', '1517', '1683'], k: 1, e: 'İstanbul 1453 yılında fethedilmiştir.' },
-    { c: 'Tarih', d: 'Zor', q: 'Yazıyı ilk kullanan uygarlık hangisidir?', a: ['Mısırlılar', 'Sümerler', 'Fenikeliler', 'Hititler'], k: 1, e: 'Çivi yazısını geliştiren Sümerlerdir.' },
     { c: 'Spor', d: 'Kolay', q: 'Normal sürede bir futbol maçı kaç dakikadır?', a: ['60 dakika', '80 dakika', '90 dakika', '120 dakika'], k: 2, e: 'İki 45 dakikalık devreden oluşur.' },
-    { c: 'Spor', d: 'Orta', q: 'Basketbolda normal saha içi uzaktan atış kaç puandır?', a: ['1 puan', '2 puan', '3 puan', '4 puan'], k: 2, e: 'Üç sayı çizgisinin gerisinden yapılan isabetli atış 3 puandır.' },
-    { c: 'Teknoloji', d: 'Kolay', q: 'Klavyede kopyalama yapmak için hangi kısayol kullanılır?', a: ['Ctrl + V', 'Ctrl + X', 'Ctrl + C', 'Ctrl + Z'], k: 2, e: 'Ctrl + C kopyalama kısayoludur.' },
-    { c: 'Teknoloji', d: 'Orta', q: 'HTML açılımında "L" harfi neyi ifade eder?', a: ['Logic', 'Language', 'Link', 'List'], k: 1, e: 'HTML: HyperText Markup Language.' }
+    { c: 'Teknoloji', d: 'Kolay', q: 'Klavyede kopyalama yapmak için hangi kısayol kullanılır?', a: ['Ctrl + V', 'Ctrl + X', 'Ctrl + C', 'Ctrl + Z'], k: 2, e: 'Ctrl + C kopyalama kısayoludur.' }
   ];
 
   // --- KARANLIK / GECE MODU & ANİMASYONLAR ---
@@ -360,9 +347,10 @@
     }
   }
 
-  // --- YENİ OYUN KARIŞTIRICI, TEKRAR ÖNLEYİCİ & DIŞ KAYNAK / GOOGLE SORU ÇEKİCİ ---
+  // --- YENİ OYUN KARIŞTIRICI, TEKRAR ÖNLEYİCİ & GOOGLE / API SORU ÇEKİCİ ---
   const RECENT_Q_STORAGE_KEY = 'bd_recent_game_questions_v2';
-  const EXTERNAL_URL_STORAGE_KEY = 'bd_external_q_url_v1';
+  const GOOGLE_API_KEY_STORAGE = 'bd_google_cse_key_v1';
+  const GOOGLE_CX_STORAGE = 'bd_google_cse_cx_v1';
 
   function fisherYatesShuffle(arr) {
     const copy = [...arr];
@@ -376,8 +364,7 @@
   function getQuestionKey(q) {
     if (!q) return '';
     const text = String(q.q || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    const ansPart = Array.isArray(q.a) ? q.a.map((x) => String(x || '').trim().toLowerCase()).join('|') : '';
-    return `${text}__${ansPart}`;
+    return text;
   }
 
   function getRecentQuestionKeys() {
@@ -393,7 +380,7 @@
   function saveRecentQuestionKeys(questions) {
     try {
       const added = (questions || []).map(getQuestionKey).filter(Boolean);
-      const merged = [...added, ...getRecentQuestionKeys()].slice(0, 50);
+      const merged = [...new Set([...added, ...getRecentQuestionKeys()])].slice(0, 60);
       localStorage.setItem(RECENT_Q_STORAGE_KEY, JSON.stringify(merged));
     } catch {}
   }
@@ -404,91 +391,86 @@
     } catch {}
   }
 
-  function normalizeExternalQuestions(rawData) {
-    const out = [];
-    // Eğer Google Custom Search JSON formatı gelirse (items dizisi)
-    if (rawData && Array.isArray(rawData.items)) {
-      rawData.items.forEach((item, idx) => {
-        if (item && item.title) {
-          out.push({
-            c: 'Google Web',
-            d: 'Orta',
-            q: `${item.title} — Bu bilginin doğruluğu nedir?`,
-            a: ['Doğru / İlgili Kaynak', 'Eksik Bilgi', 'Kısmen Doğru', 'Alakasız'],
-            k: 0,
-            e: item.snippet || item.link || 'Google arama sonucundan çekildi.'
-          });
-        }
-      });
-      return out;
-    }
-
-    const list = Array.isArray(rawData)
-      ? rawData
-      : Array.isArray(rawData?.questions)
-      ? rawData.questions
-      : Array.isArray(rawData?.results)
-      ? rawData.results
-      : [];
-
-    list.forEach((item) => {
-      if (!item) return;
-      // OpenTDB benzeri format desteği
-      if (item.question && Array.isArray(item.incorrect_answers) && item.correct_answer) {
-        const allOpts = fisherYatesShuffle([item.correct_answer, ...item.incorrect_answers]).slice(0, 4);
-        const kIdx = Math.max(0, allOpts.indexOf(item.correct_answer));
-        out.push({
-          c: item.category || 'Harici Kaynak',
-          d: item.difficulty === 'easy' ? 'Kolay' : item.difficulty === 'hard' ? 'Zor' : 'Orta',
-          q: item.question,
-          a: allOpts,
-          k: kIdx,
-          e: `Doğru yanıt: ${item.correct_answer}`
-        });
-        return;
-      }
-
-      if (item.q && Array.isArray(item.a) && item.a.length >= 2) {
-        out.push({
-          c: item.c || 'Harici Kaynak',
-          d: item.d || 'Orta',
-          q: String(item.q),
-          a: item.a.slice(0, 4).map(String),
-          k: Number(item.k || 0),
-          e: item.e || ''
-        });
-      }
-    });
-
-    return out;
+  function decodeHtmlEntities(str) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = String(str || '');
+    return txt.value;
   }
 
-  async function fetchExternalQuestionsFromUrl(url) {
-    if (!url || !/^https?:\/\//i.test(url.trim())) return [];
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 4500);
-    try {
-      const res = await fetch(url.trim(), { signal: controller.signal });
-      if (!res.ok) return [];
-      const data = await res.json();
-      const parsed = normalizeExternalQuestions(data);
-      if (parsed.length) {
-        window.__BD_EXTERNAL_QUESTIONS = [
-          ...(window.__BD_EXTERNAL_QUESTIONS || []),
-          ...parsed
-        ];
-      }
-      return parsed;
-    } catch {
-      return [];
-    } finally {
-      clearTimeout(t);
+  // Google Custom Search JSON API üzerinden soru çekme (anahtar varsa Google'dan, yoksa OpenTDB API'den)
+  async function fetchQuestionsFromGoogleOrWeb(catVal, difVal, amount = 12) {
+    const apiKey = ($('bdGoogleApiKeyInput')?.value || '').trim();
+    const cx = ($('bdGoogleCxInput')?.value || '').trim();
+
+    if (apiKey && cx) {
+      try {
+        const qTopic = catVal && catVal !== 'Karışık' ? `${catVal} genel kültür soru cevap` : 'genel kültür soru cevap';
+        const startIdx = Math.floor(Math.random() * 25) + 1;
+        const url = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(
+          apiKey
+        )}&cx=${encodeURIComponent(cx)}&q=${encodeURIComponent(qTopic)}&hl=tr&start=${startIdx}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data.items) ? data.items : [];
+          const mapped = items
+            .filter((it) => it && it.title && it.snippet)
+            .map((it, idx) => {
+              const cleanTitle = decodeHtmlEntities(it.title).replace(/\s*[-|].*$/, '').trim();
+              const cleanSnippet = decodeHtmlEntities(it.snippet).trim();
+              const distractors = [
+                'Bu bilgi tarihsel olarak yanlıştır',
+                'Böyle bir kavram bulunmamaktadır',
+                'Yalnızca hayali bir kurgudur'
+              ];
+              const opts = fisherYatesShuffle([cleanSnippet.slice(0, 85), ...distractors]);
+              const kIdx = opts.indexOf(cleanSnippet.slice(0, 85));
+              return {
+                c: catVal && catVal !== 'Karışık' ? catVal : 'Google Arama',
+                d: difVal && difVal !== 'Karışık' ? difVal : idx % 2 === 0 ? 'Orta' : 'Zor',
+                q: `${cleanTitle} hakkında doğru bilgi hangisidir?`,
+                a: opts,
+                k: Math.max(0, kIdx),
+                e: cleanSnippet
+              };
+            });
+          if (mapped.length) return mapped;
+        }
+      } catch {}
     }
+
+    // Ücretsiz harici trivia JSON kaynağından taze soru çekme
+    try {
+      const diffParam =
+        difVal === 'Kolay' ? '&difficulty=easy' : difVal === 'Zor' ? '&difficulty=hard' : '';
+      const apiUrl = `https://opentdb.com/api.php?amount=${Math.min(20, Math.max(5, amount))}&type=multiple${diffParam}`;
+      const res = await fetch(apiUrl);
+      if (res.ok) {
+        const data = await res.json();
+        const results = Array.isArray(data.results) ? data.results : [];
+        return results.map((r) => {
+          const qText = decodeHtmlEntities(r.question);
+          const rightAns = decodeHtmlEntities(r.correct_answer);
+          const wrongAns = (r.incorrect_answers || []).map(decodeHtmlEntities);
+          const opts = fisherYatesShuffle([rightAns, ...wrongAns]).slice(0, 4);
+          return {
+            c: decodeHtmlEntities(r.category || 'Genel Kültür'),
+            d: r.difficulty === 'easy' ? 'Kolay' : r.difficulty === 'hard' ? 'Zor' : 'Orta',
+            q: qText,
+            a: opts,
+            k: Math.max(0, opts.indexOf(rightAns)),
+            e: `Doğru cevap: ${rightAns}`
+          };
+        });
+      }
+    } catch {}
+
+    return [];
   }
 
   function getCombinedBank() {
     const customBank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
-    const extBank = Array.isArray(window.__BD_EXTERNAL_QUESTIONS) ? window.__BD_EXTERNAL_QUESTIONS : [];
+    const extBank = Array.isArray(window.__BD_FETCHED_QUESTIONS) ? window.__BD_FETCHED_QUESTIONS : [];
     const merged = [...extBank, ...customBank, ...FALLBACK_BANK];
     const map = new Map();
     merged.forEach((q) => {
@@ -709,60 +691,61 @@
     });
   }
 
-  // --- SETUP EKRANINDA YARIŞMA TİPİ (ŞIKLI SORULAR / SAYI BULMA), DIŞ KAYNAK & ÖZEL SORU ---
+  // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & GOOGLE SORU ÇEKME ---
   function ensureSetupExtras() {
     const setupSec = $('setup');
     const contBtn = $('continueBtn');
     if (!setupSec || !contBtn || $('bdCustomQuestionBox')) return;
 
-    let savedUrl = '';
+    let savedKey = '';
+    let savedCx = '';
     try {
-      savedUrl = localStorage.getItem(EXTERNAL_URL_STORAGE_KEY) || '';
+      savedKey = localStorage.getItem(GOOGLE_API_KEY_STORAGE) || '';
+      savedCx = localStorage.getItem(GOOGLE_CX_STORAGE) || '';
     } catch {}
 
     const modeBox = document.createElement('div');
     modeBox.id = 'bdGameModeBox';
-    modeBox.style.cssText =
-      'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;display:flex;gap:10px;flex-wrap:wrap;align-items:center;';
+    modeBox.style.cssText = 'margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
     modeBox.innerHTML = `
-      <label style="font-size:.86rem;font-weight:700;">Yarışma Tipi:
-        <select id="competitionTypeSelect" style="padding:6px 10px;border-radius:10px;border:1px solid #d1d5db;margin-left:6px;">
-          <option value="quiz">📝 Şıklı Sorular Yarışması</option>
-          <option value="number_guess">🔢 Sayı Bulma Yarışması (10 Hak)</option>
-        </select>
-      </label>
-      <label id="bdSubModeLabel" style="font-size:.86rem;font-weight:700;">Soru Modu:
+      <label style="font-size:.86rem;font-weight:700;">Oyun Modu:
         <select id="gameModeSelect" style="padding:6px 10px;border-radius:10px;border:1px solid #d1d5db;margin-left:6px;">
           <option value="standard">⚔️ Standart Düello</option>
           <option value="lightning">⚡ Yıldırım Hızı (7 sn)</option>
           <option value="chaos">🌀 Tam Kaos (Ters Köşe + Bomba + Gizli Puan)</option>
+          <option value="number_puzzle">🔢 Sayı Bulmaca (10 Hak + Sıra Geçişli)</option>
         </select>
       </label>
     `;
     contBtn.parentNode.insertBefore(modeBox, contBtn);
 
-    const extBox = document.createElement('div');
-    extBox.id = 'bdExternalFetchBox';
-    extBox.style.cssText =
+    const googleBox = document.createElement('div');
+    googleBox.id = 'bdGoogleSourceBox';
+    googleBox.style.cssText =
       'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
-    extBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🌐 Dış Kaynaktan / Google JSON API'den Soru Çek</b>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input id="bdExternalUrlInput" value="${escapeHtml(
-          savedUrl
-        )}" placeholder="https://... (JSON / OpenTDB / Google Custom Search JSON URL)" style="flex:1;min-width:200px;padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:.82rem;">
-        <button type="button" id="bdExternalFetchBtn" class="btn secondary small">Soruları Çek</button>
+    googleBox.innerHTML = `
+      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🔎 Google / Dış Kaynaktan Yeni Sorular Çek</b>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+        <input id="bdGoogleApiKeyInput" value="${escapeHtml(
+          savedKey
+        )}" placeholder="Google API Key (opsiyonel)" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.8rem;">
+        <input id="bdGoogleCxInput" value="${escapeHtml(
+          savedCx
+        )}" placeholder="Google CX ID (opsiyonel)" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.8rem;">
       </div>
-      <div id="bdExternalFetchStatus" style="margin-top:6px;font-size:.78rem;color:#475569;">Kod içine gömülü havuz + harici kaynak birlikte çalışır.</div>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+        <span id="bdGoogleFetchStatus" style="font-size:.78rem;color:#475569;">Oda açılırken otomatik yeni sorular çekilir.</span>
+        <button type="button" id="bdGoogleFetchNowBtn" class="btn secondary small">Şimdi Yeni Soru Çek</button>
+      </div>
     `;
-    contBtn.parentNode.insertBefore(extBox, contBtn);
+    contBtn.parentNode.insertBefore(googleBox, contBtn);
 
     const qBox = document.createElement('div');
     qBox.id = 'bdCustomQuestionBox';
     qBox.style.cssText =
       'margin:12px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
     qBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.9rem;">➕ Bu Maça Özel Şıklı Soru Ekle (İsteğe Bağlı)</b>
+      <b style="display:block;margin-bottom:6px;font-size:.9rem;">➕ Bu Maça Özel Soru Ekle (İsteğe Bağlı)</b>
       <input id="cqText" placeholder="Soru metni..." style="width:100%;margin-bottom:6px;padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:.86rem;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
         <input id="cqA0" placeholder="A şıkkı" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.82rem;">
@@ -790,7 +773,7 @@
     jsonBox.style.cssText =
       'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
     jsonBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.88rem;">📥 Dışarıdan JSON Soru Yapıştır</b>
+      <b style="display:block;margin-bottom:6px;font-size:.88rem;">📥 Dışarıdan JSON Soru Yükle</b>
       <textarea id="bdJsonTextarea" rows="2" placeholder='[{"q":"Soru?","a":["A","B","C","D"],"k":0,"d":"Zor","c":"Genel"}]' style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:.78rem;"></textarea>
       <div style="margin-top:6px;display:flex;justify-content:flex-end;">
         <button type="button" id="bdJsonImportBtn" class="btn secondary small">JSON Soruları Aktar</button>
@@ -799,35 +782,34 @@
     contBtn.parentNode.insertBefore(jsonBox, contBtn);
 
     window.__BD_EXTRA_QUESTIONS = [];
-    window.__BD_EXTERNAL_QUESTIONS = window.__BD_EXTERNAL_QUESTIONS || [];
+    window.__BD_FETCHED_QUESTIONS = window.__BD_FETCHED_QUESTIONS || [];
 
-    const syncCompUi = () => {
-      const isNum = $('competitionTypeSelect')?.value === 'number_guess';
-      if ($('bdSubModeLabel')) $('bdSubModeLabel').classList.toggle('hidden', isNum);
-      if ($('bdExternalFetchBox')) $('bdExternalFetchBox').classList.toggle('hidden', isNum);
-      if ($('bdCustomQuestionBox')) $('bdCustomQuestionBox').classList.toggle('hidden', isNum);
-      if ($('bdJsonImportBox')) $('bdJsonImportBox').classList.toggle('hidden', isNum);
+    const syncModeVisibility = () => {
+      const isPuzzle = $('gameModeSelect')?.value === 'number_puzzle';
+      ['bdGoogleSourceBox', 'bdCustomQuestionBox', 'bdJsonImportBox'].forEach((id) => {
+        if ($(id)) $(id).classList.toggle('hidden', isPuzzle);
+      });
     };
+    $('gameModeSelect').onchange = syncModeVisibility;
+    syncModeVisibility();
 
-    $('competitionTypeSelect').onchange = syncCompUi;
-    syncCompUi();
-
-    $('bdExternalFetchBtn').onclick = async () => {
-      const urlVal = $('bdExternalUrlInput').value.trim();
+    $('bdGoogleFetchNowBtn').onclick = async () => {
       try {
-        localStorage.setItem(EXTERNAL_URL_STORAGE_KEY, urlVal);
+        localStorage.setItem(GOOGLE_API_KEY_STORAGE, ($('bdGoogleApiKeyInput').value || '').trim());
+        localStorage.setItem(GOOGLE_CX_STORAGE, ($('bdGoogleCxInput').value || '').trim());
       } catch {}
-      $('bdExternalFetchStatus').textContent = '⏳ Dış kaynaktan sorular çekiliyor...';
-      const loaded = await fetchExternalQuestionsFromUrl(urlVal);
-      if (loaded.length) {
-        $('bdExternalFetchStatus').textContent = `✓ ${loaded.length} soru dış kaynaktan eklendi (Toplam havuz: ${
-          getCombinedBank().length
-        }).`;
-        toast(`${loaded.length} soru dış kaynaktan çekildi!`);
+      $('bdGoogleFetchStatus').textContent = '⏳ Yeni sorular çekiliyor...';
+      const fetched = await fetchQuestionsFromGoogleOrWeb(
+        $('category')?.value || 'Karışık',
+        $('difficulty')?.value || 'Karışık',
+        Number($('qCount')?.value || 10) + 5
+      );
+      if (fetched.length) {
+        window.__BD_FETCHED_QUESTIONS = [...fetched, ...window.__BD_FETCHED_QUESTIONS];
+        $('bdGoogleFetchStatus').textContent = `✓ ${fetched.length} yeni soru eklendi!`;
+        toast(`${fetched.length} yeni soru çekildi.`);
       } else {
-        $('bdExternalFetchStatus').textContent =
-          '⚠️ URL okunamadı veya CORS engelli; dahili soru havuzu aktif.';
-        toast('Harici kaynak yanıt vermedi, dahili havuz kullanılacak.');
+        $('bdGoogleFetchStatus').textContent = '⚠️ Dış kaynak yanıt vermedi, yedek havuz karıştırılacak.';
       }
     };
 
@@ -916,10 +898,8 @@
     $('createSettings').classList.remove('hidden');
     $('roomCodeLabel').classList.add('hidden');
     ensureSetupExtras();
-    ['bdGameModeBox', 'bdExternalFetchBox', 'bdCustomQuestionBox', 'bdJsonImportBox'].forEach((id) => {
-      if ($(id)) $(id).classList.remove('hidden');
-    });
-    if ($('competitionTypeSelect')) $('competitionTypeSelect').onchange();
+    $('bdGameModeBox')?.classList.remove('hidden');
+    if ($('gameModeSelect')) $('gameModeSelect').onchange();
     show('setup');
   };
 
@@ -928,7 +908,7 @@
     $('setupTitle').textContent = 'Odaya katıl';
     $('createSettings').classList.add('hidden');
     $('roomCodeLabel').classList.remove('hidden');
-    ['bdGameModeBox', 'bdExternalFetchBox', 'bdCustomQuestionBox', 'bdJsonImportBox'].forEach((id) => {
+    ['bdGameModeBox', 'bdGoogleSourceBox', 'bdCustomQuestionBox', 'bdJsonImportBox'].forEach((id) => {
       if ($(id)) $(id).classList.add('hidden');
     });
     show('setup');
@@ -964,41 +944,48 @@
 
       if (mode === 'create') {
         roomId = String(Math.floor(100000 + Math.random() * 900000));
-        const compType = $('competitionTypeSelect')?.value || 'quiz';
-        const extUrl = $('bdExternalUrlInput')?.value?.trim() || '';
-        if (extUrl && compType === 'quiz') {
-          await fetchExternalQuestionsFromUrl(extUrl);
+        const gMode = $('gameModeSelect')?.value || 'standard';
+        const isPuzzle = gMode === 'number_puzzle';
+        const requestedCount = Number($('qCount').value) || 10;
+
+        if (!isPuzzle) {
+          const freshExternal = await fetchQuestionsFromGoogleOrWeb(
+            $('category')?.value || 'Karışık',
+            $('difficulty')?.value || 'Karışık',
+            requestedCount + 6
+          );
+          if (freshExternal.length) {
+            window.__BD_FETCHED_QUESTIONS = [
+              ...freshExternal,
+              ...(window.__BD_FETCHED_QUESTIONS || [])
+            ];
+          }
         }
 
-        const requestedCount = Number($('qCount').value) || 10;
         const extras = Array.isArray(window.__BD_EXTRA_QUESTIONS) ? [...window.__BD_EXTRA_QUESTIONS] : [];
         const baseCount = Math.max(1, requestedCount - extras.length);
-        questionDeck =
-          compType === 'number_guess'
-            ? []
-            : fisherYatesShuffle([...extras, ...pickFreshQuestions(baseCount)]).slice(
-                0,
-                Math.max(requestedCount, extras.length)
-              );
+        questionDeck = isPuzzle
+          ? []
+          : fisherYatesShuffle([...extras, ...pickFreshQuestions(baseCount)]).slice(
+              0,
+              Math.max(requestedCount, extras.length)
+            );
         saveRecentQuestionKeys(questionDeck);
         if (window.__BD_EXTRA_QUESTIONS) window.__BD_EXTRA_QUESTIONS.length = 0;
         if ($('cqAddedList')) $('cqAddedList').textContent = '';
 
-        const gMode = $('gameModeSelect')?.value || 'standard';
         const qTimeVal = gMode === 'lightning' ? 7 : Number($('qTime').value) || 15;
 
         const room = {
           createdAt: Date.now(),
           host: uid,
           status: 'lobby',
-          competitionType: compType,
           settings: {
-            count: compType === 'number_guess' ? 2 : questionDeck.length,
+            count: isPuzzle ? 2 : questionDeck.length,
             time: qTimeVal,
             category: $('category').value,
             difficulty: $('difficulty').value,
-            gameMode: gMode,
-            externalUrl: extUrl
+            gameMode: gMode
           },
           players: {
             [uid]: {
@@ -1024,18 +1011,16 @@
           typing: {},
           sabotage: null,
           predictions: {},
-          numberGame:
-            compType === 'number_guess'
-              ? {
-                  round: 1,
-                  setterSlot: 1,
-                  guesserSlot: 2,
-                  secretNumber: null,
-                  guessesLeft: 10,
-                  history: [],
-                  finishedRounds: 0
-                }
-              : null
+          numberPuzzle: isPuzzle
+            ? {
+                setterSlot: 1,
+                guesserSlot: 2,
+                secretNumber: null,
+                questionsLeft: 10,
+                guesses: [],
+                completedTurns: 0
+              }
+            : null
         };
 
         roomRef = firebase.database().ref('rooms/' + roomId);
@@ -1114,8 +1099,8 @@
     return Boolean(roomData?.players?.[uid]?.spectator || mySlot === 3);
   }
 
-  function isNumberGuessGame() {
-    return roomData?.competitionType === 'number_guess';
+  function isNumberPuzzleMode() {
+    return roomData?.settings?.gameMode === 'number_puzzle';
   }
 
   function isCurrentUserWinner() {
@@ -1176,8 +1161,8 @@
           if (!$('market').classList.contains('hidden')) {
             renderMarket();
             updateGameHudOnly();
-          } else if (isNumberGuessGame()) {
-            renderNumberGuessGame();
+          } else if (isNumberPuzzleMode()) {
+            renderNumberPuzzleGame();
           } else {
             renderGame();
             scheduleTurnAdvanceIfAnswered();
@@ -1213,7 +1198,7 @@
   }
 
   function scheduleTurnAdvanceIfAnswered() {
-    if (!roomData || roomData.status !== 'playing' || isNumberGuessGame()) return;
+    if (!roomData || roomData.status !== 'playing' || isNumberPuzzleMode()) return;
     const currentTurn = Number(roomData.turn || 0);
     const ansObj = roomData.answers && roomData.answers[currentTurn];
     if (!ansObj) return;
@@ -1227,7 +1212,7 @@
       if (Number(roomData.turn || 0) !== currentTurn) return;
       if (!(roomData.answers && roomData.answers[currentTurn])) return;
       await advanceTurnAfterAnswer(currentTurn);
-    }, 1700);
+    }, 1600);
   }
 
   async function advanceTurnAfterAnswer(answeredTurn) {
@@ -1266,7 +1251,7 @@
     const isHost = roomData?.host === uid;
     const curCount = Number(roomData?.settings?.count || 10);
     const curTime = Number(roomData?.settings?.time || 15);
-    const compLabel = isNumberGuessGame() ? '🔢 Sayı Bulma (10 Hak)' : `📝 Şıklı Sorular (${curCount} Soru)`;
+    const puzzleMode = isNumberPuzzleMode();
 
     const soundPickerHtml = `
       <label style="font-size:.8rem;">Rakip Hata Sesi:
@@ -1279,9 +1264,9 @@
       </label>
     `;
 
-    if (isHost && !isNumberGuessGame()) {
+    if (isHost && !puzzleMode) {
       setBox.innerHTML = `
-        <span style="font-size:.84rem;font-weight:700;">⚙️ ${compLabel}:</span>
+        <span style="font-size:.84rem;font-weight:700;">⚙️ Lobi Ayarı:</span>
         <label style="font-size:.8rem;">Soru:
           <select id="lobbyQCount" style="padding:3px 6px;border-radius:8px;border:1px solid #d1d5db;">
             <option value="5" ${curCount === 5 ? 'selected' : ''}>5</option>
@@ -1297,22 +1282,30 @@
           </select>
         </label>
         ${soundPickerHtml}
-        <button type="button" id="lobbyApplySettingsBtn" class="btn secondary small">Güncelle</button>
+        <button type="button" id="lobbyApplySettingsBtn" class="btn secondary small">Yeni Sorularla Güncelle</button>
       `;
       $('lobbyApplySettingsBtn').onclick = async () => {
         const newCount = Number($('lobbyQCount').value || 10);
         const newTime = Number($('lobbyQTime').value || 15);
+        const freshExt = await fetchQuestionsFromGoogleOrWeb(
+          roomData?.settings?.category || 'Karışık',
+          roomData?.settings?.difficulty || 'Karışık',
+          newCount + 5
+        );
+        if (freshExt.length) {
+          window.__BD_FETCHED_QUESTIONS = [...freshExt, ...(window.__BD_FETCHED_QUESTIONS || [])];
+        }
         const fresh = pickFreshQuestions(newCount);
         await roomRef.update({
           'settings/count': newCount,
           'settings/time': newTime,
           questions: fresh.map((q) => ({ ...q }))
         });
-        toast('Lobi ayarları ve yeni sorular güncellendi!');
+        toast('Yeni sorular çekildi ve lobi güncellendi!');
       };
     } else {
       setBox.innerHTML = `
-        <small>⚙️ ${compLabel}${isNumberGuessGame() ? '' : ` · <b>${curTime} sn</b>`}</small>
+        <small>⚙️ Mod: <b>${puzzleMode ? '🔢 Sayı Bulmaca (10 Soru Hakkı)' : `${curCount} Soru · ${curTime} sn`}</b></small>
         ${soundPickerHtml}
       `;
     }
@@ -1406,21 +1399,20 @@
     handledFinishView = false;
     recordedMatchId = null;
 
-    if (isNumberGuessGame()) {
+    if (isNumberPuzzleMode()) {
       await roomRef.update({
         status: 'playing',
         turn: 0,
         answers: {},
         sabotage: null,
         startedAt: Date.now(),
-        numberGame: {
-          round: 1,
+        numberPuzzle: {
           setterSlot: 1,
           guesserSlot: 2,
           secretNumber: null,
-          guessesLeft: 10,
-          history: [],
-          finishedRounds: 0
+          questionsLeft: 10,
+          guesses: [],
+          completedTurns: 0
         }
       });
     } else {
@@ -1459,153 +1451,157 @@
     show('home');
   };
 
-  // --- BAĞIMSIZ SAYI BULMA YARIŞMASI (1 SAYI TUTAR, DİĞERİ 10 HAKLA BULUR, BULUNCA SIRA GEÇER) ---
-  function getPlayerBySlot(slotNum) {
-    const entries = Object.entries(roomData?.players || {}).filter(([, p]) => !p.spectator);
-    return entries.find(([, p]) => Number(p.slot) === Number(slotNum)) || null;
+  // --- SAYI BULMACA MODU (1 SAYI GİRER, DİĞERİ 10 SORU HAKKIYLA BULUR, BİTİNCE DİĞER RAKİBE GEÇER) ---
+  function getPlayerEntryBySlot(slotNum) {
+    return (
+      Object.entries(roomData?.players || {}).find(
+        ([, p]) => !p.spectator && Number(p.slot) === Number(slotNum)
+      ) || null
+    );
   }
 
-  function renderNumberGuessGame() {
+  function renderNumberPuzzleGame() {
     clearInterval(timerInterval);
     show('game');
     if (!roomData?.players) return;
 
     updateGameHudOnly();
-    const ng = roomData.numberGame || {
-      round: 1,
+    if ($('bdJokerBar')) $('bdJokerBar').classList.add('hidden');
+
+    const np = roomData.numberPuzzle || {
       setterSlot: 1,
       guesserSlot: 2,
       secretNumber: null,
-      guessesLeft: 10,
-      history: [],
-      finishedRounds: 0
+      questionsLeft: 10,
+      guesses: [],
+      completedTurns: 0
     };
 
-    const setterEntry = getPlayerBySlot(ng.setterSlot);
-    const guesserEntry = getPlayerBySlot(ng.guesserSlot);
+    const setterEntry = getPlayerEntryBySlot(np.setterSlot);
+    const guesserEntry = getPlayerEntryBySlot(np.guesserSlot);
     const setterUid = setterEntry?.[0];
     const guesserUid = guesserEntry?.[0];
-    const setterName = setterEntry?.[1]?.name || 'Oyuncu ' + ng.setterSlot;
-    const guesserName = guesserEntry?.[1]?.name || 'Oyuncu ' + ng.guesserSlot;
+    const setterName = setterEntry?.[1]?.name || 'Rakip 1';
+    const guesserName = guesserEntry?.[1]?.name || 'Rakip 2';
 
-    const roundNum = Number(ng.round || 1);
-    $('roundNo').textContent = `Tur ${roundNum} / 2`;
-    $('progressBar').style.width = `${Math.min(100, ((roundNum - 1) / 2) * 100)}%`;
-    $('timer').textContent = String(ng.guessesLeft ?? 10);
-    $('qCategory').textContent = '🔢 Sayı Bulma Yarışması';
-    $('qDifficulty').textContent = `${ng.guessesLeft ?? 10} Hak Kaldı`;
+    const doneTurns = Number(np.completedTurns || 0);
+    $('roundNo').textContent = `Aşama ${Math.min(2, doneTurns + 1)} / 2`;
+    $('progressBar').style.width = `${Math.min(100, (doneTurns / 2) * 100)}%`;
+    $('timer').textContent = String(np.questionsLeft ?? 10);
+    $('qCategory').textContent = '🔢 Sayı Bulmaca';
+    $('qDifficulty').textContent = `${np.questionsLeft ?? 10} Soru Hakkı`;
     $('answerFeedback').textContent = '';
-
-    if ($('bdJokerBar')) $('bdJokerBar').classList.add('hidden');
 
     const ansEl = $('answers');
     ansEl.innerHTML = '';
 
-    const isSetterMe = uid === setterUid && !isSpectator();
-    const isGuesserMe = uid === guesserUid && !isSpectator();
+    const isSetter = uid === setterUid && !isSpectator();
+    const isGuesser = uid === guesserUid && !isSpectator();
 
-    if (ng.secretNumber === null || ng.secretNumber === undefined) {
-      $('turnNotice').textContent = isSetterMe
-        ? 'SIRA SENDE! 1 ile 100 arasında gizli bir sayı tut.'
-        : `${escapeHtml(setterName)} gizli bir sayı tutuyor...`;
-      $('questionText').textContent = isSetterMe
-        ? '1 ile 100 arasında tuttuğun gizli sayıyı gir ve kilitle. Rakibin 10 soruda/tahminde bulmaya çalışacak!'
-        : `${escapeHtml(setterName)} sayıyı tuttuktan sonra 10 tahmin/soru hakkın başlayacak.`;
+    if (np.secretNumber === null || np.secretNumber === undefined) {
+      $('turnNotice').textContent = isSetter
+        ? 'SIRA SENDE! Gizli bir sayı (1-100) gir ve kilitle.'
+        : `${escapeHtml(setterName)} gizli sayı giriyor...`;
+      $('questionText').textContent = isSetter
+        ? '1 ile 100 arasında gizli sayını gir. Rakibin 10 soru/tahmin hakkıyla bulmaya çalışacak!'
+        : `${escapeHtml(setterName)} sayıyı kilitlediğinde 10 soru hakkın başlayacak.`;
 
-      if (isSetterMe) {
+      if (isSetter) {
         ansEl.innerHTML = `
           <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input id="ngSecretInput" type="number" min="1" max="100" placeholder="1-100 arası sayı" style="flex:1;min-width:140px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
-            <button type="button" id="ngSetSecretBtn" class="btn primary">🔒 Sayıyı Kilitle</button>
+            <input id="npSecretInput" type="number" min="1" max="100" placeholder="1-100 arası sayı" style="flex:1;min-width:140px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
+            <button type="button" id="npLockSecretBtn" class="btn primary">🔒 Sayıyı Kilitle</button>
           </div>
         `;
-        $('ngSetSecretBtn').onclick = async () => {
-          const val = Number($('ngSecretInput').value);
+        $('npLockSecretBtn').onclick = async () => {
+          const val = Number($('npSecretInput').value);
           if (!Number.isInteger(val) || val < 1 || val > 100) {
-            toast('1 ile 100 arasında tam sayı girmelisin.');
+            toast('1 ile 100 arasında tam sayı gir.');
             return;
           }
-          await roomRef.child('numberGame').update({
+          await roomRef.child('numberPuzzle').update({
             secretNumber: val,
-            guessesLeft: 10,
-            history: []
+            questionsLeft: 10,
+            guesses: []
           });
-          toast('🔒 Gizli sayı kilitlendi! Rakibin tahminlere başlayabilir.');
+          toast('🔒 Sayı kilitlendi! Rakibin tahminlere başlayabilir.');
         };
       }
       return;
     }
 
-    $('turnNotice').textContent = isGuesserMe
-      ? `SIRA SENDE! ${escapeHtml(setterName)} sayıyı tuttu (${ng.guessesLeft} hak kaldı).`
-      : isSetterMe
-      ? `Senin sayın (${ng.secretNumber}) kilitli! ${escapeHtml(guesserName)} bulmaya çalışıyor.`
+    $('turnNotice').textContent = isGuesser
+      ? `SIRA SENDE! ${escapeHtml(setterName)} sayıyı tuttu (${np.questionsLeft} hak kaldı).`
+      : isSetter
+      ? `Senin sayın (${np.secretNumber}) kilitli! ${escapeHtml(guesserName)} bulmaya çalışıyor.`
       : `${escapeHtml(guesserName)}, ${escapeHtml(setterName)} tuttuğu sayıyı bulmaya çalışıyor.`;
 
-    $('questionText').textContent = `1–100 arasındaki gizli sayıyı bul! Kalan hak: ${ng.guessesLeft} / 10`;
+    $('questionText').textContent = `1–100 arasındaki gizli sayıyı bul! Kalan soru hakkı: ${np.questionsLeft} / 10`;
 
-    const histArr = Array.isArray(ng.history) ? ng.history : Object.values(ng.history || {});
-    const histHtml = histArr.length
+    const guessList = Array.isArray(np.guesses) ? np.guesses : Object.values(np.guesses || {});
+    const historyHtml = guessList.length
       ? `<div style="grid-column:1/-1;max-height:150px;overflow-y:auto;padding:8px 10px;border-radius:10px;background:rgba(148,163,184,.12);font-size:.84rem;">
-          ${histArr
+          ${guessList
             .map(
-              (h, idx) =>
-                `<div style="margin-bottom:4px;"><b>#${idx + 1} Tahmin: ${h.guess}</b> → ${escapeHtml(h.clue)}</div>`
+              (g, idx) =>
+                `<div style="margin-bottom:4px;"><b>Soru ${idx + 1} (${g.val}):</b> ${escapeHtml(g.hint)}</div>`
             )
             .join('')}
         </div>`
       : '';
 
-    const guessControlsHtml = isGuesserMe
+    const inputHtml = isGuesser
       ? `<div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input id="ngGuessInput" type="number" min="1" max="100" placeholder="Tahminini yaz (1-100)..." style="flex:1;min-width:150px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
-          <button type="button" id="ngSubmitGuessBtn" class="btn primary">🎯 Tahmin Et</button>
+          <input id="npGuessInput" type="number" min="1" max="100" placeholder="Sayı sor / tahmin et (1-100)..." style="flex:1;min-width:150px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
+          <button type="button" id="npAskGuessBtn" class="btn primary">🎯 Tahmin / Soru Sor</button>
         </div>`
-      : `<div style="grid-column:1/-1;font-size:.86rem;color:#64748b;">Rakibin sayıyı tahmin ediyor...</div>`;
+      : `<div style="grid-column:1/-1;font-size:.86rem;color:#64748b;">Rakibin sayıyı bulmaya çalışıyor...</div>`;
 
-    ansEl.innerHTML = histHtml + guessControlsHtml;
+    ansEl.innerHTML = historyHtml + inputHtml;
 
-    if (isGuesserMe && $('ngSubmitGuessBtn')) {
-      $('ngSubmitGuessBtn').onclick = async () => {
-        const gVal = Number($('ngGuessInput').value);
+    if (isGuesser && $('npAskGuessBtn')) {
+      $('npAskGuessBtn').onclick = async () => {
+        const gVal = Number($('npGuessInput').value);
         if (!Number.isInteger(gVal) || gVal < 1 || gVal > 100) {
           toast('1 ile 100 arasında bir sayı gir.');
           return;
         }
 
-        const secret = Number(ng.secretNumber);
-        const currentLeft = Number(ng.guessesLeft ?? 10);
-        const nextLeft = Math.max(0, currentLeft - 1);
-        const nextHistory = [...histArr];
+        const secret = Number(np.secretNumber);
+        const curLeft = Number(np.questionsLeft ?? 10);
+        const nextLeft = Math.max(0, curLeft - 1);
+        const nextGuesses = [...guessList];
 
         if (gVal === secret) {
           playCorrectSound();
-          nextHistory.push({ guess: gVal, clue: '🎉 BİLDİN! Doğru sayı bulundu!' });
-          const earnedPts = 40 + nextLeft * 5;
-          const curScore = Number(roomData.players?.[uid]?.score || 0);
-          const curCorrect = Number(roomData.players?.[uid]?.correct || 0);
-
+          nextGuesses.push({ val: gVal, hint: '🎉 BİLDİN! Doğru sayı!' });
+          const earned = 40 + nextLeft * 5;
+          const myCurScore = Number(roomData.players?.[uid]?.score || 0);
+          const myCurCorrect = Number(roomData.players?.[uid]?.correct || 0);
           await roomRef.child(`players/${uid}`).update({
-            score: curScore + earnedPts,
-            correct: curCorrect + 1
+            score: myCurScore + earned,
+            correct: myCurCorrect + 1
           });
 
-          const finishedRounds = Number(ng.finishedRounds || 0) + 1;
-          if (finishedRounds >= 2) {
-            await roomRef.child('numberGame').update({ guessesLeft: nextLeft, history: nextHistory, finishedRounds });
-            toast(`🎉 Sayıyı bildin! +${earnedPts} puan kazandın. Oyun bitiyor...`);
+          const nextDone = doneTurns + 1;
+          if (nextDone >= 2) {
+            await roomRef.child('numberPuzzle').update({
+              questionsLeft: nextLeft,
+              guesses: nextGuesses,
+              completedTurns: nextDone
+            });
+            toast(`🎉 Sayıyı bildin (+${earned}p)! İki taraf da oynadı, oyun bitiyor...`);
             setTimeout(() => finalizeGameWithPenalties(), 1200);
           } else {
-            await roomRef.child('numberGame').update({
-              round: finishedRounds + 1,
-              setterSlot: ng.guesserSlot,
-              guesserSlot: ng.setterSlot,
+            await roomRef.child('numberPuzzle').update({
+              setterSlot: np.guesserSlot,
+              guesserSlot: np.setterSlot,
               secretNumber: null,
-              guessesLeft: 10,
-              history: [],
-              finishedRounds
+              questionsLeft: 10,
+              guesses: [],
+              completedTurns: nextDone
             });
-            toast(`🎉 Sayıyı bildin (+${earnedPts}p)! Şimdi sıra diğer kişiye geçti.`);
+            toast(`🎉 Bildin (+${earned}p)! Sıra diğer rakibe geçti.`);
           }
           return;
         }
@@ -1613,45 +1609,47 @@
         playWrongSound(getRivalTauntSoundStyle());
         const diff = Math.abs(secret - gVal);
         const dirText = gVal < secret ? 'Daha BÜYÜK bir sayı' : 'Daha KÜÇÜK bir sayı';
-        const tempText = diff <= 5 ? '🔥 Çok sıcak!' : diff <= 15 ? '♨️ Ilık' : '❄️ Soğuk';
-        const clueStr = `${dirText} (${tempText})`;
-        nextHistory.push({ guess: gVal, clue: clueStr });
+        const tempText = diff <= 5 ? '🔥 Çok sıcak' : diff <= 15 ? '♨️ Ilık' : '❄️ Soğuk';
+        nextGuesses.push({ val: gVal, hint: `${dirText} (${tempText})` });
 
         if (nextLeft <= 0) {
-          const finishedRounds = Number(ng.finishedRounds || 0) + 1;
-          const setterCurScore = Number(roomData.players?.[setterUid]?.score || 0);
+          const nextDone = doneTurns + 1;
           if (setterUid) {
-            await roomRef.child(`players/${setterUid}/score`).set(setterCurScore + 30);
+            const setterScore = Number(roomData.players?.[setterUid]?.score || 0);
+            await roomRef.child(`players/${setterUid}/score`).set(setterScore + 30);
           }
-          nextHistory.push({ guess: gVal, clue: `❌ 10 hak doldu! Gizli sayı: ${secret}` });
+          nextGuesses.push({ val: gVal, hint: `❌ 10 soru hakkı bitti! Gizli sayı: ${secret}` });
 
-          if (finishedRounds >= 2) {
-            await roomRef.child('numberGame').update({ guessesLeft: 0, history: nextHistory, finishedRounds });
-            toast(`❌ 10 hak bitti! Sayı ${secret} idi. Oyun bitiyor...`);
-            setTimeout(() => finalizeGameWithPenalties(), 1400);
-          } else {
-            await roomRef.child('numberGame').update({
-              round: finishedRounds + 1,
-              setterSlot: ng.guesserSlot,
-              guesserSlot: ng.setterSlot,
-              secretNumber: null,
-              guessesLeft: 10,
-              history: [],
-              finishedRounds
+          if (nextDone >= 2) {
+            await roomRef.child('numberPuzzle').update({
+              questionsLeft: 0,
+              guesses: nextGuesses,
+              completedTurns: nextDone
             });
-            toast(`❌ 10 hak doldu (Sayı: ${secret}). Sıra diğer kişiye geçti!`);
+            toast(`❌ 10 hak bitti (Sayı: ${secret}). Oyun bitiyor...`);
+            setTimeout(() => finalizeGameWithPenalties(), 1300);
+          } else {
+            await roomRef.child('numberPuzzle').update({
+              setterSlot: np.guesserSlot,
+              guesserSlot: np.setterSlot,
+              secretNumber: null,
+              questionsLeft: 10,
+              guesses: [],
+              completedTurns: nextDone
+            });
+            toast(`❌ 10 hak doldu (Sayı: ${secret}). Sıra diğer rakibe geçti!`);
           }
         } else {
-          await roomRef.child('numberGame').update({
-            guessesLeft: nextLeft,
-            history: nextHistory
+          await roomRef.child('numberPuzzle').update({
+            questionsLeft: nextLeft,
+            guesses: nextGuesses
           });
         }
       };
     }
   }
 
-  // --- JOKER (PUAN SİLEN), İDDİA, SABOTAJ & SORU ATLA (ŞIKLI SORULAR) ---
+  // --- JOKER, İDDİA, SABOTAJ & SORU ATLA ---
   async function spendJokerPoints(cost) {
     if (!roomRef || !uid) return false;
     let ok = false;
@@ -1814,7 +1812,7 @@
     const turn = Number(roomData.turn || 0);
     const qs = Array.isArray(roomData.questions) ? roomData.questions : [];
     const curQ = qs[turn];
-    const hideScores = !isNumberGuessGame() && curQ?.twist === 'blind' && !answered;
+    const hideScores = !isNumberPuzzleMode() && curQ?.twist === 'blind' && !answered;
 
     $('meLabel').textContent = me?.name || 'Sen';
     $('rivalLabel').textContent = rival?.name || 'Rakip';
@@ -1968,7 +1966,6 @@
     clearInterval(timerInterval);
     if ($('game')) $('game').classList.remove('bd-bomb-danger');
 
-    // Butonları anında kilitle ve görsel olarak işaretle
     const ansButtons = $('answers') ? [...$('answers').children] : [];
     const q = selectedQuestion;
     const isReverse = q.twist === 'reverse';
@@ -2558,7 +2555,7 @@
   $('closeMarket').onclick = () => {
     if (roomData?.status === 'finished') renderResult();
     else if (roomData?.status === 'playing') {
-      if (isNumberGuessGame()) renderNumberGuessGame();
+      if (isNumberPuzzleMode()) renderNumberPuzzleGame();
       else renderGame();
     } else show('game');
   };
@@ -2622,7 +2619,7 @@
     rematchBtn.onclick = async () => {
       if (!roomRef || !roomData) return;
       const count = Number(roomData.settings?.count || 10);
-      const freshDeck = isNumberGuessGame() ? [] : pickFreshQuestions(count);
+      const freshDeck = isNumberPuzzleMode() ? [] : pickFreshQuestions(count);
 
       const resetPlayers = {};
       Object.entries(roomData.players || {}).forEach(([pid, pObj]) => {
@@ -2648,7 +2645,7 @@
       shownPenaltyIds.clear();
       closePenaltyPopup();
 
-      const updatePayload = {
+      const payload = {
         status: 'lobby',
         turn: 0,
         answers: {},
@@ -2658,20 +2655,19 @@
         players: resetPlayers
       };
 
-      if (isNumberGuessGame()) {
-        updatePayload.numberGame = {
-          round: 1,
+      if (isNumberPuzzleMode()) {
+        payload.numberPuzzle = {
           setterSlot: 1,
           guesserSlot: 2,
           secretNumber: null,
-          guessesLeft: 10,
-          history: [],
-          finishedRounds: 0
+          questionsLeft: 10,
+          guesses: [],
+          completedTurns: 0
         };
       }
 
-      await roomRef.update(updatePayload);
-      toast('🔄 Rövanş lobisi hazır!');
+      await roomRef.update(payload);
+      toast('🔄 Rövanş lobisi yeni sorularla hazır!');
     };
   }
 
@@ -2724,8 +2720,8 @@
       backBtn.parentNode.insertBefore(sumBox, backBtn);
     }
 
-    if (isNumberGuessGame()) {
-      sumBox.innerHTML = '<b>🔢 Sayı Bulma Yarışması Tamamlandı</b>';
+    if (isNumberPuzzleMode()) {
+      sumBox.innerHTML = '<b>🔢 Sayı Bulmaca Tamamlandı</b>';
       return;
     }
 
