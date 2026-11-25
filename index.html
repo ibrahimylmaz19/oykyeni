@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bilgi Düellosu | Online 2 Kişilik Yarışma</title>
+<meta name="description" content="Arkadaşınla farklı cihazlardan online bilgi yarışması oyna. Bilgini göster, puanını topla, rakibine görev ver!">
+<meta name="theme-color" content="#ff7a24"><meta property="og:title" content="Bilgi Düellosu"><meta property="og:description" content="Online bilgi yarışması ve eğlenceli görevler.">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><div class="brand"><span class="logo">⚡</span><span>BİLGİ <b>DÜELLOSU</b></span></div><div class="online-pill"><i></i> ONLINE</div></header>
+<main class="wrap">
+<section id="home" class="panel hero">
+<div class="hero-copy"><span class="eyebrow">2 KİŞİ • ONLINE • REKABET</span><h1>Bilgini göster,<br><em>puanını topla!</em></h1><p>Rakibini farklı cihazdan davet et, düelloya başla ve kazandığın puanlarla ona eğlenceli görevler gönder.</p>
+<div class="home-actions"><button class="btn primary" id="createBtn">⚔️ Oda oluştur</button><button class="btn secondary" id="joinBtn">🔗 Odaya katıl</button></div>
+<div class="feature-row"><span>🎯 Bilgi yarışı</span><span>🏆 Skor takibi</span><span>🎭 Görevler</span></div></div>
+<div class="hero-art"><div class="burst">VS</div><div class="player-art p1">🧠</div><div class="player-art p2">🔥</div><div class="mini-card">10 SORU <b>·</b> 15 SN</div></div>
+</section>
+<section id="setup" class="panel hidden">
+<div class="section-head"><div><span class="eyebrow">OYUNCU BİLGİLERİ</span><h2 id="setupTitle">Oda oluştur</h2></div><button class="icon-btn" id="backHome">✕</button></div>
+<div class="form-grid"><label>Oyuncu adı<input id="playerName" maxlength="18" placeholder="Adını yaz"></label><label>Avatar<div class="avatars" id="avatars"></div></label></div>
+<div id="createSettings" class="settings"><label>Soru sayısı<select id="qCount"><option>10</option><option>15</option><option>20</option></select></label><label>Soru süresi<select id="qTime"><option>15</option><option>10</option><option>20</option><option>30</option></select></label><label>Kategori<select id="category"><option>Karışık</option><option>Genel kültür</option><option>Tarih</option><option>Coğrafya</option><option>Bilim</option><option>Teknoloji</option><option>Spor</option><option>Sinema</option><option>Müzik</option><option>Hayvanlar</option><option>Matematik</option><option>Mantık</option><option>Türkçe</option><option>Edebiyat</option><option>Yemek</option></select></label><label>Zorluk<select id="difficulty"><option>Karışık</option><option>Kolay</option><option>Orta</option><option>Zor</option></select></label></div>
+<label id="roomCodeLabel" class="hidden">6 haneli oda kodu<input id="roomCode" inputmode="numeric" maxlength="6" placeholder="123456"></label>
+<button class="btn primary full" id="continueBtn">Devam et</button><p class="note">İsim ve oda kodu dışında kişisel bilgi istenmez.</p>
+</section>
+<section id="lobby" class="panel hidden">
+<div class="section-head"><div><span class="eyebrow">OYUN LOBİSİ</span><h2>Rakibini bekle!</h2></div><button class="icon-btn" id="leaveLobby">✕</button></div>
+<div class="room-code-card"><small>ODA KODUN</small><strong id="lobbyCode">------</strong><div class="code-actions"><button class="btn secondary small" id="copyCode">📋 Kodu kopyala</button><button class="btn secondary small" id="shareCode">WhatsApp'ta paylaş</button></div></div>
+<div class="players"><div class="player-slot" id="slot1"><div class="avatar-big">🧠</div><b>Oyuncu 1</b><span>Bekleniyor…</span></div><div class="versus">VS</div><div class="player-slot" id="slot2"><div class="avatar-big">❔</div><b>Oyuncu 2</b><span>Bekleniyor…</span></div></div>
+<p id="lobbyHint" class="center note">Oda kodunu arkadaşına gönder. İkinci oyuncu katılınca hazır olabilirsiniz.</p><button class="btn primary full" id="readyBtn">Hazırım!</button><button class="btn secondary full hidden" id="startBtn">Oyunu başlat</button>
+</section>
+<section id="game" class="panel hidden">
+<div class="game-top"><div class="scorebox"><span id="meLabel">Sen</span><b id="myScore">0</b></div><div class="round"><small>TUR</small><b id="roundNo">1 / 10</b></div><div class="scorebox rival"><span id="rivalLabel">Rakip</span><b id="rivalScore">0</b></div></div>
+<div class="progress"><div id="progressBar"></div></div>
+<div id="turnNotice" class="notice">Sıra sende!</div><div class="question-meta"><span id="qCategory">Kategori</span><span id="qDifficulty">Kolay</span></div><h2 id="questionText">Soru yükleniyor…</h2><div id="answers" class="answers"></div><div class="timer-wrap"><div class="timer" id="timer">15</div><small> saniye</small></div><div id="answerFeedback" class="feedback"></div><button class="btn secondary full" id="openMarket">🎭 Ceza & Görev Marketi</button>
+</section>
+
+<section id="market" class="panel hidden">
+ <div class="section-head"><div><span class="eyebrow">PUANLARINI KULLAN</span><h2>Ceza & Görev Marketi</h2></div><button class="icon-btn" id="closeMarket">✕</button></div>
+ <p class="note">Görev satın al, rakibine gönder. Görevi alan oyuncu tamamlandığında işaretleyebilir.</p>
+ <div id="marketBalance" class="notice">Bakiyen: 0 puan</div>
+ <div id="marketItems" class="market-grid"></div>
+ <h3>Gelen görevler</h3><div id="taskList" class="task-list"></div>
+</section>
+
+
+<section id="result" class="panel hidden">
+<div class="result-emoji">🏆</div><span class="eyebrow">DÜELLO TAMAMLANDI</span><h2 id="resultTitle">Sonuç</h2><div class="result-scores" id="resultScores"></div><p id="resultText"></p><button class="btn primary full" id="backToStart">Ana menü</button>
+</section>
+<section id="errorToast" class="toast hidden"></section>
+</main>
+<footer>Bilgi Düellosu <span>•</span> Arkadaşınla online kapış!</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script><script src="questions.js"></script><script src="app.js"></script>
+</body></html>
