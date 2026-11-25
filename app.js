@@ -747,6 +747,7 @@ saveRecentQuestionKeys(finalDeck);
 
   // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & CANLI SORU KAYNAĞI ---
 // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & ANAHTARSIZ CANLI SORU ---
+ // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & YEREL RASTGELE SORU ---
   function ensureSetupExtras() {
     const setupSec = $('setup');
     const contBtn = $('continueBtn');
@@ -767,39 +768,38 @@ saveRecentQuestionKeys(finalDeck);
     `;
     contBtn.parentNode.insertBefore(modeBox, contBtn);
 
-    const liveBox = document.createElement('div');
-    liveBox.id = 'bdGoogleSourceBox';
-    liveBox.style.cssText =
+    const bankBox = document.createElement('div');
+    bankBox.id = 'bdLocalBankBox';
+    bankBox.style.cssText =
       'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
-    liveBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🌐 Canlı İnternetten Rastgele Türkçe Soru (API Key İstemez)</b>
+    bankBox.innerHTML = `
+      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🎲 Rastgele Soru Havuzu</b>
       <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-        <span id="bdGoogleFetchStatus" style="font-size:.78rem;color:#475569;">Her oyunda canlı kaynaktan tekrarsız ve rastgele sorular çekilir.</span>
-        <button type="button" id="bdGoogleFetchNowBtn" class="btn secondary small">Rastgele Soru Test Et</button>
+        <span id="bdBankFetchStatus" style="font-size:.78rem;color:#475569;">Sorular doğrudan soru bankasından tekrarsız ve rastgele seçilir.</span>
+        <button type="button" id="bdBankTestBtn" class="btn secondary small">Rastgele Soru Test Et</button>
       </div>
     `;
-    contBtn.parentNode.insertBefore(liveBox, contBtn);
+    contBtn.parentNode.insertBefore(bankBox, contBtn);
 
     const syncModeVisibility = () => {
       const isPuzzle = $('gameModeSelect')?.value === 'number_puzzle';
-      if ($('bdGoogleSourceBox')) $('bdGoogleSourceBox').classList.toggle('hidden', isPuzzle);
+      if ($('bdLocalBankBox')) $('bdLocalBankBox').classList.toggle('hidden', isPuzzle);
     };
     $('gameModeSelect').onchange = syncModeVisibility;
     syncModeVisibility();
 
-    $('bdGoogleFetchNowBtn').onclick = async () => {
-      $('bdGoogleFetchStatus').textContent = '⏳ Canlı kaynaktan rastgele sorular çekiliyor...';
-      const sample = await fetchRandomQuestionsFromWeb(
+    $('bdBankTestBtn').onclick = () => {
+      const sample = fetchRandomQuestionsFromBank(
         Number($('qCount')?.value) || 5,
         $('category')?.value || 'Karışık',
         $('difficulty')?.value || 'Karışık'
       );
       if (sample.length) {
-        $('bdGoogleFetchStatus').textContent = `✓ Canlı kaynaktan ${sample.length} rastgele soru hazırlandı!`;
-        toast(`${sample.length} rastgele soru çekildi.`);
+        $('bdBankFetchStatus').textContent = `✓ ${sample.length} rastgele soru seçildi!`;
+        toast(`${sample.length} rastgele soru hazırlandı.`);
       } else {
-        $('bdGoogleFetchStatus').textContent = '⚠️ İnternet bağlantısını kontrol et, canlı soru alınamadı.';
-        toast('Canlı soru alınamadı.');
+        $('bdBankFetchStatus').textContent = '⚠️ Soru bankasında soru bulunamadı.';
+        toast('Soru bankası boş.');
       }
     };
   }
