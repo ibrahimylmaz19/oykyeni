@@ -49,34 +49,6 @@
   let localStreak = 0;
   let activeBetAmount = 0;
 
-  // Genişletilmiş Türkçe Soru Havuzu
-  const FALLBACK_BANK = [
-    { c: 'Genel Kültür', d: 'Orta', q: 'Türkiye’nin en yüksek dağı hangisidir?', a: ['Süphan Dağı', 'Ağrı Dağı', 'Erciyes Dağı', 'Kaçkar Dağı'], k: 1, e: 'Ağrı Dağı 5.137 metre ile Türkiye’nin en yüksek dağıdır.' },
-    { c: 'Genel Kültür', d: 'Kolay', q: 'Hangi gezegen Güneş’e en yakındır?', a: ['Venüs', 'Mars', 'Merkür', 'Dünya'], k: 2, e: 'Güneş’e en yakın gezegen Merkür’dür.' },
-    { c: 'Genel Kültür', d: 'Orta', q: 'Mona Lisa tablosu hangi müzede sergilenmektedir?', a: ['Louvre Müzesi', 'Prado Müzesi', 'Uffizi Galerisi', 'British Museum'], k: 0, e: 'Mona Lisa Paris’teki Louvre Müzesi’ndedir.' },
-    { c: 'Genel Kültür', d: 'Zor', q: 'Periyodik tabloda "Au" simgesi hangi elementi gösterir?', a: ['Gümüş', 'Altın', 'Argon', 'Alüminyum'], k: 1, e: 'Au, Latince Aurum (Altın) kelimesinden gelir.' },
-    { c: 'Bilim', d: 'Kolay', q: 'Su normal atmosfer basıncında kaç derecede kaynar?', a: ['80°C', '90°C', '100°C', '110°C'], k: 2, e: 'Standart basınçta saf su 100°C’de kaynar.' },
-    { c: 'Bilim', d: 'Orta', q: 'İnsan vücudundaki en büyük organ hangisidir?', a: ['Karaciğer', 'Deri', 'Akciğer', 'Kalın Bağırsak'], k: 1, e: 'Deri insan vücudunun en büyük organıdır.' },
-    { c: 'Bilim', d: 'Orta', q: 'Işığın boşluktaki hızı yaklaşık saniyede kaç kilometredir?', a: ['150.000 km', '225.000 km', '300.000 km', '450.000 km'], k: 2, e: 'Işık boşlukta yaklaşık 300.000 km/sn hızla yayılır.' },
-    { c: 'Bilim', d: 'Zor', q: 'DNA molekülünün çift sarmal yapısını keşfeden bilim insanları arasında kim yer alır?', a: ['James Watson', 'Isaac Newton', 'Nikola Tesla', 'Galileo Galilei'], k: 0, e: 'DNA’nın çift sarmal yapısı Watson ve Crick tarafından modellenmiştir.' },
-    { c: 'Coğrafya', d: 'Kolay', q: 'Akdeniz’e kıyısı olan Türk şehirlerinden biri hangisidir?', a: ['Konya', 'Mersin', 'Kayseri', 'Sivas'], k: 1, e: 'Mersin Akdeniz kıyısında yer alır.' },
-    { c: 'Coğrafya', d: 'Orta', q: 'Dünyanın en uzun nehri hangisidir?', a: ['Amazon Nehri', 'Nil Nehri', 'Fırat Nehri', 'Tuna Nehri'], k: 1, e: 'Nil Nehri dünyanın en uzun nehirlerinden biridir.' },
-    { c: 'Coğrafya', d: 'Zor', q: 'Japonya’nın en yüksek noktası olan volkanik dağ hangisidir?', a: ['Fuji Dağı', 'Etna Dağı', 'Vezüv Dağı', 'Kilimanjaro'], k: 0, e: 'Fuji Dağı 3.776 metre yüksekliğiyle Japonya’nın zirvesidir.' },
-    { c: 'Tarih', d: 'Kolay', q: 'Türkiye Cumhuriyeti hangi yılda ilan edilmiştir?', a: ['1919', '1920', '1923', '1938'], k: 2, e: 'Cumhuriyet 29 Ekim 1923’te ilan edilmiştir.' },
-    { c: 'Tarih', d: 'Orta', q: 'İstanbul’un fethi hangi tarihte gerçekleşmiştir?', a: ['1071', '1299', '1453', '1517'], k: 2, e: 'İstanbul 29 Mayıs 1453’te fethedilmiştir.' },
-    { c: 'Tarih', d: 'Zor', q: 'Tarihte bilinen ilk yazılı antlaşma hangisidir?', a: ['Kadeş Antlaşması', 'Versay Antlaşması', 'Lozan Antlaşması', 'Westphalia Antlaşması'], k: 0, e: 'MÖ 1259 tarihli Kadeş Antlaşması bilinen en eski yazılı antlaşmadır.' },
-    { c: 'Spor', d: 'Kolay', q: 'Normal sürede bir futbol maçı kaç dakikadır?', a: ['60 dakika', '80 dakika', '90 dakika', '120 dakika'], k: 2, e: 'Futbol maçları 45’er dakikalık iki devreden oluşur.' },
-    { c: 'Spor', d: 'Orta', q: 'Basketbolda serbest atış çizgisinden yapılan isabetli atış kaç puandır?', a: ['1 puan', '2 puan', '3 puan', '4 puan'], k: 0, e: 'Serbest atış 1 puan değerindedir.' },
-    { c: 'Spor', d: 'Zor', q: 'Olimpiyat halkalarında kaç farklı renk bulunur?', a: ['4 renk', '5 renk', '6 renk', '7 renk'], k: 1, e: 'Mavi, sarı, siyah, yeşil ve kırmızı olmak üzere 5 halka vardır.' },
-    { c: 'Teknoloji', d: 'Kolay', q: 'Klavyede kopyalama yapmak için hangi kısayol kullanılır?', a: ['Ctrl + V', 'Ctrl + X', 'Ctrl + C', 'Ctrl + Z'], k: 2, e: 'Ctrl + C kopyalama kısayoludur.' },
-    { c: 'Teknoloji', d: 'Orta', q: 'HTTP protokolünde "S" harfi neyi ifade eder?', a: ['Server', 'Secure', 'System', 'Speed'], k: 1, e: 'HTTPS bağlantının güvenli (Secure) olduğunu gösterir.' },
-    { c: 'Teknoloji', d: 'Zor', q: 'Bir bayt (Byte) kaç bitten oluşur?', a: ['4 bit', '8 bit', '16 bit', '32 bit'], k: 1, e: '1 Byte standart olarak 8 bitten oluşur.' },
-    { c: 'Edebiyat', d: 'Orta', q: 'Küçük Prens adlı ünlü eserin yazarı kimdir?', a: ['Antoine de Saint-Exupéry', 'Jules Verne', 'Victor Hugo', 'Franz Kafka'], k: 0, e: 'Küçük Prens 1943 yılında Antoine de Saint-Exupéry tarafından yazılmıştır.' },
-    { c: 'Sanat', d: 'Orta', q: 'Yıldızlı Gece tablosu hangi ressama aittir?', a: ['Claude Monet', 'Vincent van Gogh', 'Pablo Picasso', 'Salvador Dalí'], k: 1, e: 'Yıldızlı Gece (1889) Vincent van Gogh’un en tanınmış eseridir.' },
-    { c: 'Genel Kültür', d: 'Kolay', q: 'Bir yılda kaç mevsim vardır?', a: ['2 mevsim', '3 mevsim', '4 mevsim', '6 mevsim'], k: 2, e: 'Bir yılda ilkbahar, yaz, sonbahar ve kış olmak üzere 4 mevsim vardır.' },
-    { c: 'Bilim', d: 'Kolay', q: 'Bitkilerin güneş ışığı yardımıyla besin üretme sürecine ne ad verilir?', a: ['Mayalanma', 'Fotosentez', 'Buharlaşma', 'Solunum'], k: 1, e: 'Bitkiler ışığı kullanarak fotosentez yapar.' }
-  ];
-
   // --- KARANLIK / GECE MODU & ANİMASYONLAR ---
   const THEME_STORAGE_KEY = 'bd_dark_mode_v1';
 
@@ -122,7 +94,6 @@
       body.bd-dark #bdPlayerStatsCard,
       body.bd-dark #customPenaltyBox,
       body.bd-dark #bdCustomQuestionBox,
-      body.bd-dark #bdJsonImportBox,
       body.bd-dark #bdLobbySettingsBox {
         background: #1e293b !important;
         color: #f8fafc !important;
@@ -361,10 +332,21 @@
     }
   }
 
-  // --- YENİ OYUN KARIŞTIRICI, TEKRAR ÖNLEYİCİ & TÜRKÇE SORU ÇEKİCİ ---
-  const RECENT_Q_STORAGE_KEY = 'bd_recent_game_questions_v3';
+  // --- CANLI İNTERNETTEN RASTGELE TÜRKÇE SORU BULUCU (KODA GÖMÜLÜ HAVUZ YOK) ---
+  const RECENT_Q_STORAGE_KEY = 'bd_recent_game_questions_v4';
   const GOOGLE_API_KEY_STORAGE = 'bd_google_cse_key_v1';
   const GOOGLE_CX_STORAGE = 'bd_google_cse_cx_v1';
+
+  const TOPIC_SEEDS = {
+    'Genel Kültür': ['Türkiye', 'Dünya', 'İcat', 'ReKOR', 'Sembol', 'Başkent', 'Ünlü Eser'],
+    'Bilim': ['Atom', 'Güneş', 'DNA', 'Element', 'Gezegen', 'Hücre', 'Enerji'],
+    'Coğrafya': ['Okyanus', 'Dağ', 'Nehir', 'Ada', 'Boğaz', 'Göl', 'Çöl'],
+    'Tarih': ['Antlaşma', 'İmparatorluk', 'Medeniyet', 'Devrim', 'Keşif', 'Savaş'],
+    'Spor': ['Olimpiyat', 'Futbol', 'Basketbol', 'Tenis', 'Atletizm', 'Satranç'],
+    'Teknoloji': ['İnternet', 'Yapay Zeka', 'İşlemci', 'Uydu', 'Veritabanı', 'Algoritma'],
+    'Edebiyat': ['Roman', 'Şiir', 'Yazar', 'Tiyatro', 'Destan', 'Hikaye'],
+    'Sanat': ['Tablo', 'Heykel', 'Müzik', 'Mimari', 'Sinema', 'Opera']
+  };
 
   function fisherYatesShuffle(arr) {
     const copy = [...arr];
@@ -405,7 +387,7 @@
   function saveRecentQuestionKeys(questions) {
     try {
       const added = (questions || []).map(getQuestionKey).filter(Boolean);
-      const merged = [...new Set([...added, ...getRecentQuestionKeys()])].slice(0, 80);
+      const merged = [...new Set([...added, ...getRecentQuestionKeys()])].slice(0, 120);
       localStorage.setItem(RECENT_Q_STORAGE_KEY, JSON.stringify(merged));
     } catch {}
   }
@@ -422,10 +404,72 @@
     return txt.value;
   }
 
-  async function fetchTurkishQuestionsFromGoogle(catVal, difVal) {
+  async function fetchLiveWikipediaCandidates(seeds, countNeeded) {
+    const titles = new Set();
+    const summaries = [];
+
+    for (const seed of fisherYatesShuffle(seeds).slice(0, 4)) {
+      try {
+        const searchUrl = `https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+          seed
+        )}&srlimit=12&sroffset=${Math.floor(Math.random() * 25)}&format=json&origin=*`;
+        const sRes = await fetch(searchUrl);
+        if (sRes.ok) {
+          const sJson = await sRes.json();
+          const hits = sJson?.query?.search || [];
+          hits.forEach((h) => {
+            if (h?.title) titles.add(h.title);
+          });
+        }
+      } catch {}
+    }
+
+    // Tamamen rastgele Türkçe Vikipedi sayfaları da ekle
+    const randBatches = Math.min(4, Math.max(2, Math.ceil(countNeeded / 3)));
+    for (let b = 0; b < randBatches; b++) {
+      try {
+        const randUrl = `https://tr.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=8&format=json&origin=*`;
+        const rRes = await fetch(randUrl);
+        if (rRes.ok) {
+          const rJson = await rRes.json();
+          (rJson?.query?.random || []).forEach((item) => {
+            if (item?.title) titles.add(item.title);
+          });
+        }
+      } catch {}
+    }
+
+    const pickedTitles = fisherYatesShuffle([...titles]).slice(0, Math.max(16, countNeeded * 3));
+    for (const title of pickedTitles) {
+      try {
+        const sumUrl = `https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const pRes = await fetch(sumUrl);
+        if (!pRes.ok) continue;
+        const pJson = await pRes.json();
+        const extract = String(pJson?.extract || '').trim();
+        const cleanTitle = String(pJson?.title || title).trim();
+        if (
+          pJson?.type === 'standard' &&
+          cleanTitle &&
+          extract.length >= 45 &&
+          !cleanTitle.toLowerCase().includes('liste') &&
+          !cleanTitle.toLowerCase().includes('anlam ayrımı')
+        ) {
+          const firstSentence = extract.split(/(?<=[.!?])\s+/)[0] || extract.slice(0, 120);
+          summaries.push({
+            title: cleanTitle,
+            answerText: firstSentence.slice(0, 95)
+          });
+        }
+      } catch {}
+    }
+
+    return summaries;
+  }
+
+  async function fetchGoogleCseQuestions(catVal, difVal) {
     const apiKey = ($('bdGoogleApiKeyInput')?.value || '').trim();
     const cx = ($('bdGoogleCxInput')?.value || '').trim();
-
     if (!apiKey || !cx) return [];
 
     try {
@@ -438,116 +482,112 @@
         apiKey
       )}&cx=${encodeURIComponent(cx)}&q=${encodeURIComponent(qTopic)}&lr=lang_tr&hl=tr&start=${startIdx}`;
       const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        const items = Array.isArray(data.items) ? data.items : [];
-        const mapped = items
-          .filter((it) => it && it.title && it.snippet)
-          .map((it, idx) => {
-            const cleanTitle = decodeHtmlEntities(it.title).replace(/\s*[-|].*$/, '').trim();
-            const cleanSnippet = decodeHtmlEntities(it.snippet).replace(/\s+/g, ' ').trim();
-            const rightText = cleanSnippet.slice(0, 75);
-            const distractors = [
-              'Bu ifade tarihsel olarak hatalıdır',
-              'Böyle bir tanım bulunmamaktadır',
-              'Yalnızca kurgusal bir varsayımdır'
-            ];
-            const opts = fisherYatesShuffle([rightText, ...distractors]);
-            return {
-              c: catVal && catVal !== 'Karışık' ? catVal : 'Genel Kültür',
-              d: difVal && difVal !== 'Karışık' ? difVal : idx % 2 === 0 ? 'Orta' : 'Zor',
-              q: `"${cleanTitle}" ile ilgili doğru bilgi hangisidir?`,
-              a: opts,
-              k: Math.max(0, opts.indexOf(rightText)),
-              e: cleanSnippet
-            };
+      if (!res.ok) return [];
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      return items
+        .filter((it) => it && it.title && it.snippet)
+        .map((it, idx) => {
+          const cleanTitle = decodeHtmlEntities(it.title).replace(/\s*[-|].*$/, '').trim();
+          const cleanSnippet = decodeHtmlEntities(it.snippet).replace(/\s+/g, ' ').trim();
+          const rightText = cleanSnippet.slice(0, 80);
+          const distractors = items
+            .filter((_, j) => j !== idx)
+            .map((x) => decodeHtmlEntities(x.snippet || x.title || '').replace(/\s+/g, ' ').trim().slice(0, 80))
+            .filter(Boolean);
+          while (distractors.length < 3) {
+            distractors.push(`Farklı bir kaynak tanımı #${distractors.length + 1}`);
+          }
+          const opts = fisherYatesShuffle([rightText, ...fisherYatesShuffle(distractors).slice(0, 3)]);
+          return shuffleQuestionOptions({
+            c: catVal && catVal !== 'Karışık' ? catVal : 'Genel Kültür',
+            d: difVal && difVal !== 'Karışık' ? difVal : 'Orta',
+            q: `"${cleanTitle}" ile ilgili doğru bilgi hangisidir?`,
+            a: opts,
+            k: Math.max(0, opts.indexOf(rightText)),
+            e: cleanSnippet
           });
-        if (mapped.length) return mapped;
-      }
-    } catch {}
-
-    return [];
-  }
-
-  function getCombinedBank() {
-    const customBank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
-    const extBank = Array.isArray(window.__BD_FETCHED_QUESTIONS) ? window.__BD_FETCHED_QUESTIONS : [];
-    const merged = [...extBank, ...customBank, ...FALLBACK_BANK];
-    const map = new Map();
-    merged.forEach((q) => {
-      const k = getQuestionKey(q);
-      if (k && !map.has(k)) map.set(k, q);
-    });
-    return [...map.values()];
-  }
-
-  function filterQuestions() {
-    const cat = $('category')?.value || 'Karışık';
-    const dif = $('difficulty')?.value || 'Karışık';
-    const bank = getCombinedBank();
-
-    let pool = bank.filter(
-      (q) => (cat === 'Karışık' || q.c === cat) && (dif === 'Karışık' || q.d === dif)
-    );
-
-    if (!pool.length) {
-      pool = bank.filter((q) => cat === 'Karışık' || q.c === cat);
+        });
+    } catch {
+      return [];
     }
-    if (!pool.length) {
-      pool = bank.slice();
+  }
+
+  async function fetchRandomQuestionsFromWeb(count, catVal, difVal) {
+    const targetCount = Math.max(1, Number(count) || 10);
+    const cseQuestions = await fetchGoogleCseQuestions(catVal, difVal);
+
+    const allSeeds =
+      catVal && catVal !== 'Karışık' && TOPIC_SEEDS[catVal]
+        ? TOPIC_SEEDS[catVal]
+        : Object.values(TOPIC_SEEDS).flat();
+
+    const wikiItems = await fetchLiveWikipediaCandidates(allSeeds, targetCount);
+    const recentSet = new Set(getRecentQuestionKeys());
+    const generated = [...cseQuestions];
+
+    for (let i = 0; i < wikiItems.length && generated.length < targetCount + 6; i++) {
+      const item = wikiItems[i];
+      const otherAnswers = wikiItems
+        .filter((_, idx) => idx !== i)
+        .map((x) => x.answerText)
+        .filter((t) => t && t !== item.answerText);
+
+      if (otherAnswers.length < 3) continue;
+
+      const distractors = fisherYatesShuffle(otherAnswers).slice(0, 3);
+      const options = fisherYatesShuffle([item.answerText, ...distractors]);
+      const qObj = shuffleQuestionOptions({
+        c: catVal && catVal !== 'Karışık' ? catVal : 'Canlı Kaynak',
+        d: difVal && difVal !== 'Karışık' ? difVal : ['Kolay', 'Orta', 'Zor'][i % 3],
+        q: `"${item.title}" hakkında doğru ifade hangisidir?`,
+        a: options,
+        k: Math.max(0, options.indexOf(item.answerText)),
+        e: `${item.title}: ${item.answerText}`
+      });
+
+      if (!recentSet.has(getQuestionKey(qObj))) {
+        generated.push(qObj);
+      }
     }
 
-    return pool;
-  }
-
-  function enrichQuestionsWithTwists(list) {
-    const modeVal = $('gameModeSelect')?.value || 'standard';
-    return fisherYatesShuffle(list || []).map((q, idx) => {
-      const shuffledOptQ = shuffleQuestionOptions(q);
-      const copy = { ...shuffledOptQ };
-      const modRoll = (idx + 1) % 3;
-      if (modeVal === 'chaos' || modRoll === 0) {
-        const types = ['reverse', 'blind', 'bomb'];
-        copy.twist = types[Math.floor(Math.random() * types.length)];
-      } else {
-        copy.twist = 'normal';
-      }
-      return copy;
-    });
-  }
-
-  function pickFreshQuestions(count) {
-    const pool = filterQuestions();
-    let recentSet = new Set(getRecentQuestionKeys());
-
-    const uniqueMap = new Map();
-    pool.forEach((q) => {
-      const k = getQuestionKey(q);
-      if (k && !uniqueMap.has(k)) {
-        uniqueMap.set(k, q);
-      }
-    });
-
-    let freshOnes = fisherYatesShuffle([...uniqueMap.values()]).filter(
-      (q) => !recentSet.has(getQuestionKey(q))
-    );
-
-    if (freshOnes.length < count) {
+    // Yeterli yeni soru çıkmazsa görülen geçmişi temizleyip kalanları doldur
+    if (generated.length < targetCount && wikiItems.length >= 4) {
       clearRecentQuestionHistory();
-      recentSet = new Set();
-      freshOnes = fisherYatesShuffle([...uniqueMap.values()]);
+      for (let i = 0; i < wikiItems.length && generated.length < targetCount; i++) {
+        const item = wikiItems[i];
+        const distractors = fisherYatesShuffle(
+          wikiItems.filter((_, idx) => idx !== i).map((x) => x.answerText)
+        ).slice(0, 3);
+        if (distractors.length < 3) continue;
+        const options = fisherYatesShuffle([item.answerText, ...distractors]);
+        generated.push(
+          shuffleQuestionOptions({
+            c: catVal && catVal !== 'Karışık' ? catVal : 'Canlı Kaynak',
+            d: difVal && difVal !== 'Karışık' ? difVal : 'Orta',
+            q: `"${item.title}" hakkında doğru ifade hangisidir?`,
+            a: options,
+            k: Math.max(0, options.indexOf(item.answerText)),
+            e: `${item.title}: ${item.answerText}`
+          })
+        );
+      }
     }
 
-    const baseFallback = fisherYatesShuffle(getCombinedBank());
-    const selected = freshOnes.slice(0, count);
-    let guard = 0;
-    while (selected.length < count && guard < 200) {
-      const candidate = baseFallback[guard % baseFallback.length];
-      if (candidate) selected.push(candidate);
-      guard++;
-    }
+    const modeVal = $('gameModeSelect')?.value || roomData?.settings?.gameMode || 'standard';
+    const finalDeck = fisherYatesShuffle(generated)
+      .slice(0, targetCount)
+      .map((q, idx) => {
+        const copy = { ...q };
+        if (modeVal === 'chaos' || (idx + 1) % 3 === 0) {
+          const types = ['reverse', 'blind', 'bomb'];
+          copy.twist = types[Math.floor(Math.random() * types.length)];
+        } else {
+          copy.twist = 'normal';
+        }
+        return copy;
+      });
 
-    const finalDeck = enrichQuestionsWithTwists(selected).slice(0, count);
     saveRecentQuestionKeys(finalDeck);
     return finalDeck;
   }
@@ -695,11 +735,11 @@
     });
   }
 
-  // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & TÜRKÇE SORU ÇEKME ---
+  // --- SETUP EKRANINDA OYUN MODU ("Sayı Bulmaca" DAHİL) & CANLI SORU KAYNAĞI ---
   function ensureSetupExtras() {
     const setupSec = $('setup');
     const contBtn = $('continueBtn');
-    if (!setupSec || !contBtn || $('bdCustomQuestionBox')) return;
+    if (!setupSec || !contBtn || $('bdGameModeBox')) return;
 
     let savedKey = '';
     let savedCx = '';
@@ -728,7 +768,7 @@
     googleBox.style.cssText =
       'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
     googleBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🇹🇷 Türkçe Soru Havuzu & Google CSE</b>
+      <b style="display:block;margin-bottom:6px;font-size:.88rem;">🌐 Canlı İnternetten Rastgele Türkçe Soru</b>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
         <input id="bdGoogleApiKeyInput" value="${escapeHtml(
           savedKey
@@ -738,61 +778,15 @@
         )}" placeholder="Google CSE CX ID (opsiyonel)" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.8rem;">
       </div>
       <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-        <span id="bdGoogleFetchStatus" style="font-size:.78rem;color:#475569;">Türkçe havuz her oyunda yeniden karıştırılır.</span>
-        <button type="button" id="bdGoogleFetchNowBtn" class="btn secondary small">Havuzu Yenile / Karıştır</button>
+        <span id="bdGoogleFetchStatus" style="font-size:.78rem;color:#475569;">Sorular koda gömülü değildir; her oyunda canlı kaynaktan rastgele çekilir.</span>
+        <button type="button" id="bdGoogleFetchNowBtn" class="btn secondary small">Rastgele Soru Test Et</button>
       </div>
     `;
     contBtn.parentNode.insertBefore(googleBox, contBtn);
 
-    const qBox = document.createElement('div');
-    qBox.id = 'bdCustomQuestionBox';
-    qBox.style.cssText =
-      'margin:12px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
-    qBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.9rem;">➕ Bu Maça Özel Soru Ekle (İsteğe Bağlı)</b>
-      <input id="cqText" placeholder="Soru metni..." style="width:100%;margin-bottom:6px;padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:.86rem;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-        <input id="cqA0" placeholder="A şıkkı" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.82rem;">
-        <input id="cqA1" placeholder="B şıkkı" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.82rem;">
-        <input id="cqA2" placeholder="C şıkkı" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.82rem;">
-        <input id="cqA3" placeholder="D şıkkı" style="padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:.82rem;">
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-        <label style="font-size:.82rem;">Doğru Şık:
-          <select id="cqCorrect" style="padding:4px 8px;border-radius:8px;border:1px solid #d1d5db;">
-            <option value="0">A</option>
-            <option value="1">B</option>
-            <option value="2">C</option>
-            <option value="3">D</option>
-          </select>
-        </label>
-        <button type="button" id="cqAddBtn" class="btn secondary small">Soruyu Ekle</button>
-      </div>
-      <div id="cqAddedList" style="margin-top:6px;font-size:.8rem;color:#16a34a;font-weight:600;"></div>
-    `;
-    contBtn.parentNode.insertBefore(qBox, contBtn);
-
-    const jsonBox = document.createElement('div');
-    jsonBox.id = 'bdJsonImportBox';
-    jsonBox.style.cssText =
-      'margin:10px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;';
-    jsonBox.innerHTML = `
-      <b style="display:block;margin-bottom:6px;font-size:.88rem;">📥 Dışarıdan JSON Soru Yükle</b>
-      <textarea id="bdJsonTextarea" rows="2" placeholder='[{"q":"Soru?","a":["A","B","C","D"],"k":0,"d":"Zor","c":"Genel"}]' style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:.78rem;"></textarea>
-      <div style="margin-top:6px;display:flex;justify-content:flex-end;">
-        <button type="button" id="bdJsonImportBtn" class="btn secondary small">JSON Soruları Aktar</button>
-      </div>
-    `;
-    contBtn.parentNode.insertBefore(jsonBox, contBtn);
-
-    window.__BD_EXTRA_QUESTIONS = [];
-    window.__BD_FETCHED_QUESTIONS = window.__BD_FETCHED_QUESTIONS || [];
-
     const syncModeVisibility = () => {
       const isPuzzle = $('gameModeSelect')?.value === 'number_puzzle';
-      ['bdGoogleSourceBox', 'bdCustomQuestionBox', 'bdJsonImportBox'].forEach((id) => {
-        if ($(id)) $(id).classList.toggle('hidden', isPuzzle);
-      });
+      if ($('bdGoogleSourceBox')) $('bdGoogleSourceBox').classList.toggle('hidden', isPuzzle);
     };
     $('gameModeSelect').onchange = syncModeVisibility;
     syncModeVisibility();
@@ -802,73 +796,18 @@
         localStorage.setItem(GOOGLE_API_KEY_STORAGE, ($('bdGoogleApiKeyInput').value || '').trim());
         localStorage.setItem(GOOGLE_CX_STORAGE, ($('bdGoogleCxInput').value || '').trim());
       } catch {}
-      $('bdGoogleFetchStatus').textContent = '⏳ Türkçe sorular hazırlanıyor...';
-      const fetched = await fetchTurkishQuestionsFromGoogle(
+      $('bdGoogleFetchStatus').textContent = '⏳ Canlı kaynaktan rastgele sorular çekiliyor...';
+      const sample = await fetchRandomQuestionsFromWeb(
+        Number($('qCount')?.value) || 5,
         $('category')?.value || 'Karışık',
         $('difficulty')?.value || 'Karışık'
       );
-      if (fetched.length) {
-        window.__BD_FETCHED_QUESTIONS = [...fetched, ...(window.__BD_FETCHED_QUESTIONS || [])];
-        $('bdGoogleFetchStatus').textContent = `✓ Google CSE'den ${fetched.length} Türkçe soru eklendi!`;
-        toast(`${fetched.length} Türkçe soru eklendi.`);
+      if (sample.length) {
+        $('bdGoogleFetchStatus').textContent = `✓ Canlı kaynaktan ${sample.length} rastgele soru hazırlandı!`;
+        toast(`${sample.length} rastgele soru çekildi.`);
       } else {
-        clearRecentQuestionHistory();
-        $('bdGoogleFetchStatus').textContent = `✓ ${FALLBACK_BANK.length} Türkçe soru taze olarak karıştırıldı!`;
-        toast('Türkçe soru geçmişi yenilendi ve karıştırıldı.');
-      }
-    };
-
-    $('cqAddBtn').onclick = () => {
-      const qTxt = $('cqText').value.trim();
-      const opts = [$('cqA0').value.trim(), $('cqA1').value.trim(), $('cqA2').value.trim(), $('cqA3').value.trim()];
-      const k = Number($('cqCorrect').value || 0);
-      if (!qTxt || opts.some((o) => !o)) {
-        toast('Soru metnini ve 4 şıkkı da doldurmalısın.');
-        return;
-      }
-      window.__BD_EXTRA_QUESTIONS.push({
-        c: 'Özel Soru',
-        d: 'Zor',
-        q: qTxt,
-        a: opts,
-        k,
-        e: 'Maça özel eklenen soru!',
-        twist: 'normal'
-      });
-      $('cqText').value = '';
-      $('cqA0').value = '';
-      $('cqA1').value = '';
-      $('cqA2').value = '';
-      $('cqA3').value = '';
-      $('cqAddedList').textContent = `✓ ${window.__BD_EXTRA_QUESTIONS.length} özel soru hazır.`;
-      toast('Özel soru maça eklendi!');
-    };
-
-    $('bdJsonImportBtn').onclick = () => {
-      try {
-        const parsed = JSON.parse($('bdJsonTextarea').value.trim());
-        const arr = Array.isArray(parsed) ? parsed : [parsed];
-        let added = 0;
-        arr.forEach((item) => {
-          if (item && item.q && Array.isArray(item.a) && item.a.length >= 2) {
-            window.__BD_EXTRA_QUESTIONS.push({
-              c: item.c || 'Özel JSON',
-              d: item.d || 'Zor',
-              q: String(item.q),
-              a: item.a.slice(0, 4).map(String),
-              k: Number(item.k || 0),
-              e: item.e || 'JSON ile aktarıldı',
-              twist: item.twist || 'normal'
-            });
-            added++;
-          }
-        });
-        if (!added) throw new Error('Geçersiz soru formatı');
-        $('bdJsonTextarea').value = '';
-        $('cqAddedList').textContent = `✓ ${window.__BD_EXTRA_QUESTIONS.length} soru maça eklendi.`;
-        toast(`${added} JSON sorusu eklendi!`);
-      } catch {
-        toast('JSON formatı hatalı. Örnek: [{"q":"...","a":["A","B","C","D"],"k":0}]');
+        $('bdGoogleFetchStatus').textContent = '⚠️ İnternet bağlantısını kontrol et, canlı soru alınamadı.';
+        toast('Canlı soru alınamadı.');
       }
     };
   }
@@ -913,7 +852,7 @@
     $('setupTitle').textContent = 'Odaya katıl';
     $('createSettings').classList.add('hidden');
     $('roomCodeLabel').classList.remove('hidden');
-    ['bdGameModeBox', 'bdGoogleSourceBox', 'bdCustomQuestionBox', 'bdJsonImportBox'].forEach((id) => {
+    ['bdGameModeBox', 'bdGoogleSourceBox'].forEach((id) => {
       if ($(id)) $(id).classList.add('hidden');
     });
     show('setup');
@@ -953,30 +892,18 @@
         const isPuzzle = gMode === 'number_puzzle';
         const requestedCount = Number($('qCount').value) || 10;
 
-        if (!isPuzzle) {
-          const freshExternal = await fetchTurkishQuestionsFromGoogle(
-            $('category')?.value || 'Karışık',
-            $('difficulty')?.value || 'Karışık'
-          );
-          if (freshExternal.length) {
-            window.__BD_FETCHED_QUESTIONS = [
-              ...freshExternal,
-              ...(window.__BD_FETCHED_QUESTIONS || [])
-            ];
-          }
-        }
-
-        const extras = Array.isArray(window.__BD_EXTRA_QUESTIONS) ? [...window.__BD_EXTRA_QUESTIONS] : [];
-        const baseCount = Math.max(1, requestedCount - extras.length);
         questionDeck = isPuzzle
           ? []
-          : fisherYatesShuffle([
-              ...extras.map(shuffleQuestionOptions),
-              ...pickFreshQuestions(baseCount)
-            ]).slice(0, Math.max(requestedCount, extras.length));
-        saveRecentQuestionKeys(questionDeck);
-        if (window.__BD_EXTRA_QUESTIONS) window.__BD_EXTRA_QUESTIONS.length = 0;
-        if ($('cqAddedList')) $('cqAddedList').textContent = '';
+          : await fetchRandomQuestionsFromWeb(
+              requestedCount,
+              $('category')?.value || 'Karışık',
+              $('difficulty')?.value || 'Karışık'
+            );
+
+        if (!isPuzzle && !questionDeck.length) {
+          toast('Canlı kaynaktan soru çekilemedi, bağlantını kontrol et.');
+          return;
+        }
 
         const qTimeVal = gMode === 'lightning' ? 7 : Number($('qTime').value) || 15;
 
@@ -1292,20 +1219,21 @@
       $('lobbyApplySettingsBtn').onclick = async () => {
         const newCount = Number($('lobbyQCount').value || 10);
         const newTime = Number($('lobbyQTime').value || 15);
-        const freshExt = await fetchTurkishQuestionsFromGoogle(
+        const fresh = await fetchRandomQuestionsFromWeb(
+          newCount,
           roomData?.settings?.category || 'Karışık',
           roomData?.settings?.difficulty || 'Karışık'
         );
-        if (freshExt.length) {
-          window.__BD_FETCHED_QUESTIONS = [...freshExt, ...(window.__BD_FETCHED_QUESTIONS || [])];
+        if (!fresh.length) {
+          toast('Canlı kaynaktan yeni soru çekilemedi.');
+          return;
         }
-        const fresh = pickFreshQuestions(newCount);
         await roomRef.update({
-          'settings/count': newCount,
+          'settings/count': fresh.length,
           'settings/time': newTime,
           questions: fresh.map((q) => ({ ...q }))
         });
-        toast('Yeni Türkçe sorular karıştırıldı ve lobi güncellendi!');
+        toast('Canlı kaynaktan yeni sorular çekildi ve lobi güncellendi!');
       };
     } else {
       setBox.innerHTML = `
@@ -1535,7 +1463,6 @@
         </div>`
       : '';
 
-    // 1. AŞAMA: Sayıyı tutan kişi istediği tam sayıyı girer (1-100 kısıtı yok)
     if (np.secretNumber === null || np.secretNumber === undefined) {
       $('turnNotice').textContent = isSetter
         ? 'SIRA SENDE! İstediğin tam sayıyı gir ve kilitle (sınır yok).'
@@ -1569,7 +1496,6 @@
       return;
     }
 
-    // 2. AŞAMA: Tahmin eden kişi soru sorduysa, sayıyı tutan kişi cevaplar (HAK DÜŞMEZ)
     if (pendingQ) {
       $('turnNotice').textContent = isSetter
         ? `❓ ${escapeHtml(guesserName)} SORU SORDU! Cevapla (hak düşmez).`
@@ -1629,7 +1555,6 @@
       return;
     }
 
-    // 3. AŞAMA: Bulmaya çalışan kişi (isGuesser) soru sorabilir (hak düşmez) veya sayı tahmini yapabilir (hak düşer)
     $('turnNotice').textContent = isGuesser
       ? `SIRA SENDE! Soru sor (hak düşmez) veya sayı tahmin et (${leftGuesses} tahmin hakkı kaldı).`
       : isSetter
@@ -1644,7 +1569,7 @@
           <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.28);padding:10px;border-radius:12px;">
             <b style="display:block;margin-bottom:6px;font-size:.86rem;">❓ Rakibine Soru Sor (Hak Düşmez)</b>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-              <input id="npAskQuestionInput" placeholder="Örn: Sayı çift mi? 3 basamaklı mı? 500'ün üzerinde mi?" style="flex:1;min-width:190px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
+              <input id="npAskQuestionInput" placeholder="Örn: Sayı çift mi? 3 basamaklı mı? Negatif mi?" style="flex:1;min-width:190px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
               <button type="button" id="npAskQuestionBtn" class="btn primary small">❓ Soru Sor</button>
             </div>
           </div>
@@ -2729,23 +2654,20 @@
       rematchBtn.id = 'rematchBtn';
       rematchBtn.type = 'button';
       rematchBtn.className = 'btn secondary full';
-      rematchBtn.textContent = '🔄 Rövanş Başlat (Yeni Sorular)';
+      rematchBtn.textContent = '🔄 Rövanş Başlat (Canlı Rastgele Sorular)';
       backBtn.parentNode.insertBefore(rematchBtn, backBtn);
     }
 
     rematchBtn.onclick = async () => {
       if (!roomRef || !roomData) return;
       const count = Number(roomData.settings?.count || 10);
-      if (!isNumberPuzzleMode()) {
-        const freshExt = await fetchTurkishQuestionsFromGoogle(
-          roomData?.settings?.category || 'Karışık',
-          roomData?.settings?.difficulty || 'Karışık'
-        );
-        if (freshExt.length) {
-          window.__BD_FETCHED_QUESTIONS = [...freshExt, ...(window.__BD_FETCHED_QUESTIONS || [])];
-        }
-      }
-      const freshDeck = isNumberPuzzleMode() ? [] : pickFreshQuestions(count);
+      const freshDeck = isNumberPuzzleMode()
+        ? []
+        : await fetchRandomQuestionsFromWeb(
+            count,
+            roomData?.settings?.category || 'Karışık',
+            roomData?.settings?.difficulty || 'Karışık'
+          );
 
       const resetPlayers = {};
       Object.entries(roomData.players || {}).forEach(([pid, pObj]) => {
@@ -2794,7 +2716,7 @@
       }
 
       await roomRef.update(payload);
-      toast('🔄 Rövanş lobisi yeni Türkçe sorularla hazır!');
+      toast('🔄 Rövanş lobisi canlı rastgele sorularla hazır!');
     };
   }
 
