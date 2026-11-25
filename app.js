@@ -49,7 +49,7 @@
   let localStreak = 0;
   let activeBetAmount = 0;
 
-  // Genişletilmiş Türkçe Soru Havuzu (Tekrarı önlemek ve çeşitliliği artırmak için zenginleştirildi)
+  // Genişletilmiş Türkçe Soru Havuzu
   const FALLBACK_BANK = [
     { c: 'Genel Kültür', d: 'Orta', q: 'Türkiye’nin en yüksek dağı hangisidir?', a: ['Süphan Dağı', 'Ağrı Dağı', 'Erciyes Dağı', 'Kaçkar Dağı'], k: 1, e: 'Ağrı Dağı 5.137 metre ile Türkiye’nin en yüksek dağıdır.' },
     { c: 'Genel Kültür', d: 'Kolay', q: 'Hangi gezegen Güneş’e en yakındır?', a: ['Venüs', 'Mars', 'Merkür', 'Dünya'], k: 2, e: 'Güneş’e en yakın gezegen Merkür’dür.' },
@@ -422,7 +422,6 @@
     return txt.value;
   }
 
-  // Sadece Google Custom Search API (Türkçe sorgu) kullanır; anahtar yoksa İngilizce OpenTDB yerine yerel zengin Türkçe havuzu kullanır
   async function fetchTurkishQuestionsFromGoogle(catVal, difVal) {
     const apiKey = ($('bdGoogleApiKeyInput')?.value || '').trim();
     const cx = ($('bdGoogleCxInput')?.value || '').trim();
@@ -533,7 +532,6 @@
       (q) => !recentSet.has(getQuestionKey(q))
     );
 
-    // Eğer tüm havuzdaki sorular görüldüyse geçmişi sıfırlayıp taze tur başlat
     if (freshOnes.length < count) {
       clearRecentQuestionHistory();
       recentSet = new Set();
@@ -719,7 +717,7 @@
           <option value="standard">⚔️ Standart Düello</option>
           <option value="lightning">⚡ Yıldırım Hızı (7 sn)</option>
           <option value="chaos">🌀 Tam Kaos (Ters Köşe + Bomba + Gizli Puan)</option>
-          <option value="number_puzzle">🔢 Sayı Bulmaca (Sınırsız Sayı + 10 Soru/Tahmin + Sıra Geçişli)</option>
+          <option value="number_puzzle">🔢 Sayı Bulmaca (Sınırsız Sayı + Soru Sor/Cevapla + 10 Hak)</option>
         </select>
       </label>
     `;
@@ -1311,7 +1309,7 @@
       };
     } else {
       setBox.innerHTML = `
-        <small>⚙️ Mod: <b>${puzzleMode ? '🔢 Sayı Bulmaca (Sınırsız Sayı · 10 Hak)' : `${curCount} Soru · ${curTime} sn`}</b></small>
+        <small>⚙️ Mod: <b>${puzzleMode ? '🔢 Sayı Bulmaca (Sınırsız Sayı · Soru Sor/Cevapla)' : `${curCount} Soru · ${curTime} sn`}</b></small>
         ${soundPickerHtml}
       `;
     }
@@ -1467,6 +1465,13 @@
     );
   }
 
+  function parseAnyInteger(raw) {
+    const cleaned = String(raw || '').trim().replace(/\s+/g, '');
+    if (!/^-?\d+$/.test(cleaned)) return null;
+    const num = Number(cleaned);
+    return Number.isSafeInteger(num) ? num : null;
+  }
+
   function renderNumberPuzzleGame() {
     clearInterval(timerInterval);
     show('game');
@@ -1511,14 +1516,14 @@
     const isGuesser = uid === guesserUid && !isSpectator();
 
     const historyHtml = histList.length
-      ? `<div style="grid-column:1/-1;max-height:175px;overflow-y:auto;padding:10px;border-radius:12px;background:rgba(148,163,184,.12);font-size:.84rem;">
+      ? `<div style="grid-column:1/-1;max-height:185px;overflow-y:auto;padding:10px;border-radius:12px;background:rgba(148,163,184,.12);font-size:.84rem;">
           <b style="display:block;margin-bottom:6px;">📜 Geçmiş Sorular, Cevaplar ve Tahminler:</b>
           ${histList
             .map((item, idx) => {
               if (item.type === 'guess') {
-                return `<div style="margin-bottom:5px;">🎯 <b>#${idx + 1} Tahmin (${item.val}):</b> ${escapeHtml(
-                  item.resultText
-                )}</div>`;
+                return `<div style="margin-bottom:5px;">🎯 <b>#${idx + 1} Sayı Tahmini (${escapeHtml(
+                  String(item.val)
+                )}):</b> ${escapeHtml(item.resultText)}</div>`;
               }
               return `<div style="margin-bottom:5px;">❓ <b>#${idx + 1} Soru:</b> ${escapeHtml(
                 item.question
@@ -1530,47 +1535,48 @@
         </div>`
       : '';
 
-    // 1. AŞAMA: Sayıyı tutan kişi istediği tam sayıyı girer (sınır yok)
+    // 1. AŞAMA: Sayıyı tutan kişi istediği tam sayıyı girer (1-100 kısıtı yok)
     if (np.secretNumber === null || np.secretNumber === undefined) {
       $('turnNotice').textContent = isSetter
-        ? 'SIRA SENDE! İstediğin tam sayıyı gir ve kilitle.'
+        ? 'SIRA SENDE! İstediğin tam sayıyı gir ve kilitle (sınır yok).'
         : `${escapeHtml(setterName)} gizli sayısını belirliyor...`;
       $('questionText').textContent = isSetter
-        ? 'İstediğin tam sayıyı yaz ve kilitle. Rakibin 10 soru/tahmin hakkıyla sayını bulmaya çalışacak!'
+        ? 'İstediğin tam sayıyı yaz ve kilitle (örneğin 250, 1453, -88). Rakibin 10 hakla soru sorup bulmaya çalışacak!'
         : `${escapeHtml(setterName)} sayıyı kilitlediğinde 10 soru/tahmin hakkın başlayacak.`;
 
       if (isSetter) {
         ansEl.innerHTML = `
           <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input id="npSecretInput" type="number" step="1" placeholder="İstediğin tam sayı (örn: 247, -12, 9999)" style="flex:1;min-width:190px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
+            <input id="npSecretInput" type="text" inputmode="numeric" placeholder="İstediğin tam sayıyı yaz (örn: 350)" style="flex:1;min-width:190px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
             <button type="button" id="npLockSecretBtn" class="btn primary">🔒 Sayıyı Kilitle</button>
           </div>
         `;
         $('npLockSecretBtn').onclick = async () => {
-          const rawVal = String($('npSecretInput').value || '').trim();
-          if (!/^-?\d+$/.test(rawVal)) {
-            toast('Geçerli bir tam sayı gir.');
+          const secretNum = parseAnyInteger($('npSecretInput').value);
+          if (secretNum === null) {
+            toast('Geçerli bir tam sayı yaz (ör: 250 veya -15).');
             return;
           }
-          const secretNum = Number(rawVal);
           await roomRef.child('numberPuzzle').update({
             secretNumber: secretNum,
             questionsLeft: 10,
             pendingQuestion: null,
             history: []
           });
-          toast('🔒 Sayı kilitlendi! Rakibin soru sormaya veya tahmin yapmaya başlayabilir.');
+          toast('🔒 Sayı kilitlendi! Rakibin soru sormaya başlayabilir.');
         };
       }
       return;
     }
 
-    // 2. AŞAMA: Bekleyen soru varsa sayıyı tutan kişi cevaplar
+    // 2. AŞAMA: Tahmin eden kişi soru sorduysa, sayıyı tutan kişi soruyu görür ve cevaplar
     if (pendingQ) {
       $('turnNotice').textContent = isSetter
-        ? `❓ ${escapeHtml(guesserName)} SORU SORDU! Cevabını ver.`
+        ? `❓ ${escapeHtml(guesserName)} SORU SORDU! Cevapla.`
         : `⏳ Sorun (${escapeHtml(pendingQ.text)}) ${escapeHtml(setterName)} tarafından cevaplanıyor...`;
-      $('questionText').textContent = `Soru: "${pendingQ.text}"`;
+      $('questionText').textContent = isSetter
+        ? `Senin Sayın: ${np.secretNumber} | Gelen Soru: "${pendingQ.text}"`
+        : `Sorulan Soru: "${pendingQ.text}" (Cevap bekleniyor)`;
 
       if (isSetter) {
         ansEl.innerHTML =
@@ -1580,9 +1586,11 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button type="button" id="npAnsYesBtn" class="btn primary small">✅ EVET</button>
               <button type="button" id="npAnsNoBtn" class="btn secondary small">❌ HAYIR</button>
+              <button type="button" id="npAnsHigherBtn" class="btn secondary small">⬆️ Daha Büyük</button>
+              <button type="button" id="npAnsLowerBtn" class="btn secondary small">⬇️ Daha Küçük</button>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <input id="npCustomAnswerInput" placeholder="Özel cevap yaz (örn: Evet, 3 basamaklı)..." style="flex:1;min-width:170px;padding:9px 12px;border-radius:10px;border:1px solid #d1d5db;">
+              <input id="npCustomAnswerInput" placeholder="Kendi cevabını yaz (örn: Evet, 3 basamaklı)..." style="flex:1;min-width:170px;padding:9px 12px;border-radius:10px;border:1px solid #d1d5db;">
               <button type="button" id="npSendCustomAnsBtn" class="btn secondary small">Cevabı Gönder</button>
             </div>
           </div>
@@ -1639,12 +1647,14 @@
               pendingQuestion: null,
               history: nextHist
             });
-            toast('Cevabın gönderildi!');
+            toast('Cevabın rakibine gönderildi!');
           }
         };
 
         $('npAnsYesBtn').onclick = () => submitQuestionReply('Evet');
         $('npAnsNoBtn').onclick = () => submitQuestionReply('Hayır');
+        $('npAnsHigherBtn').onclick = () => submitQuestionReply('Daha büyük');
+        $('npAnsLowerBtn').onclick = () => submitQuestionReply('Daha küçük');
         $('npSendCustomAnsBtn').onclick = () => {
           const txt = ($('npCustomAnswerInput').value || '').trim();
           if (!txt) {
@@ -1659,25 +1669,31 @@
       return;
     }
 
-    // 3. AŞAMA: Tahmin eden kişi (isGuesser) soru sorabilir veya sayı tahmini yapabilir
+    // 3. AŞAMA: Bulmaya çalışan kişi (isGuesser) soru sorabilir veya sayı tahmini yapabilir
     $('turnNotice').textContent = isGuesser
-      ? `SIRA SENDE! Soru sor veya sayı tahmin et (${leftCount} hak kaldı).`
+      ? `SIRA SENDE! Önce soru sor veya doğrudan sayı tahmin et (${leftCount} hak kaldı).`
       : isSetter
-      ? `Senin sayın (${np.secretNumber}) kilitli! ${escapeHtml(guesserName)} soru soruyor / tahmin ediyor.`
+      ? `Senin Sayın: ${np.secretNumber} | ${escapeHtml(guesserName)} soru soruyor / tahmin ediyor.`
       : `${escapeHtml(guesserName)}, ${escapeHtml(setterName)} tuttuğu sayıyı bulmaya çalışıyor.`;
 
-    $('questionText').textContent = `Gizli sayıyı bul! Kalan hak: ${leftCount} / 10 (Soru sorabilir veya doğrudan sayı tahmin edebilirsin)`;
+    $('questionText').textContent = `Gizli sayıyı bul! Kalan hak: ${leftCount} / 10 — Soru sorarak ipucu al veya doğrudan sayı tahmin et!`;
 
     const actionHtml = isGuesser
       ? `
         <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input id="npAskQuestionInput" placeholder="Rakibine soru sor (örn: Sayı çift mi? 100'den büyük mü?)..." style="flex:1;min-width:190px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
-            <button type="button" id="npAskQuestionBtn" class="btn secondary">❓ Soru Sor</button>
+          <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.28);padding:10px;border-radius:12px;">
+            <b style="display:block;margin-bottom:6px;font-size:.86rem;">❓ Rakibine Soru Sor (Sayı sınırı yok)</b>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input id="npAskQuestionInput" placeholder="Örn: Sayı 200'den büyük mü? Çift mi? 5'e bölünür mü?" style="flex:1;min-width:190px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
+              <button type="button" id="npAskQuestionBtn" class="btn primary small">❓ Soru Sor</button>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input id="npGuessInput" type="number" step="1" placeholder="Sayı tahmini yap..." style="flex:1;min-width:160px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
-            <button type="button" id="npAskGuessBtn" class="btn primary">🎯 Tahmin Et</button>
+          <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.28);padding:10px;border-radius:12px;">
+            <b style="display:block;margin-bottom:6px;font-size:.86rem;">🎯 Doğrudan Sayı Tahmini Yap</b>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input id="npGuessInput" type="text" inputmode="numeric" placeholder="Bulduğun sayıyı yaz..." style="flex:1;min-width:160px;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;">
+              <button type="button" id="npAskGuessBtn" class="btn secondary small">🎯 Sayıyı Tahmin Et</button>
+            </div>
           </div>
         </div>
       `
@@ -1697,18 +1713,17 @@
           askedBy: uid,
           at: Date.now()
         });
-        toast('❓ Sorun rakibine iletildi, cevabı bekleniyor...');
+        toast('❓ Sorun gönderildi! Rakibinin cevabı bekleniyor...');
       };
     }
 
     if (isGuesser && $('npAskGuessBtn')) {
       $('npAskGuessBtn').onclick = async () => {
-        const rawG = String($('npGuessInput').value || '').trim();
-        if (!/^-?\d+$/.test(rawG)) {
-          toast('Geçerli bir tam sayı tahmini gir.');
+        const gVal = parseAnyInteger($('npGuessInput').value);
+        if (gVal === null) {
+          toast('Geçerli bir tam sayı tahmini yaz.');
           return;
         }
-        const gVal = Number(rawG);
         const secret = Number(np.secretNumber);
         const nextLeft = Math.max(0, leftCount - 1);
         const nextHist = [...histList];
@@ -1770,7 +1785,7 @@
               history: nextHist,
               completedTurns: nextDone
             });
-            toast(`❌ 10 hak bitti (Sayı: ${secret}). Oyun bitiyor...`);
+            toast(`❌ 10 hak doldu (Sayı: ${secret}). Oyun bitiyor...`);
             setTimeout(() => finalizeGameWithPenalties(), 1300);
           } else {
             await roomRef.child('numberPuzzle').update({
